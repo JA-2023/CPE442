@@ -3,4 +3,4 @@ lab3:
 	
 
 clean:
-	rm -f lab2
+	rm -f lab3
