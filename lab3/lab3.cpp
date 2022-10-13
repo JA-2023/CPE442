@@ -97,10 +97,21 @@ Mat to442_sobel(Mat &gray)
     return sobel;
 }
 
-int main()
+int main(int argc, char* argv[])
 {
+    //char array to hold the file name
+    char file[20];
+    //put command line argument in variable
+    strcat(file,argv[1]);
+    //get file path for the image
+    char path[100];
+    getcwd(path, 100);
+ 
+    //add directory and file to get full path
+    char* final[100] = {strcat(path,"/")};
+    strcat(*final,file);
     //make vidocapture to get each frame form the video
-    VideoCapture video("/home/josh/Desktop/School/CPE442/lab3/vid3.mp4");
+    VideoCapture video(*final);
 
     while(1)
     {
