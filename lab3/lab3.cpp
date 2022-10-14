@@ -1,3 +1,14 @@
+/*********************************************************
+* File: lab3.cpp
+*
+* Description: brief description of file purpose
+*
+* Author: Joshua Alderson
+* 
+* Revisions: 0
+*
+**********************************************************/
+
 #include <opencv2/highgui.hpp> 
 #include <unistd.h>
 //number of channels for RGB
@@ -8,6 +19,15 @@
 using namespace cv;
 using namespace std;
 
+/*-----------------------------------------------------
+* Function: to442_grayscale
+* 
+* Description: Takes in a image, reads the data, converts colors to gray, and returns another image
+* 
+* param a: Mat: original image frame from video
+* 
+* return: Mat
+*--------------------------------------------------------*/
 Mat to442_grayscale(Mat &image)
 {
     //initialize values to hold pixel values
@@ -38,6 +58,16 @@ Mat to442_grayscale(Mat &image)
     }
     return grayscale;
 }
+
+/*-----------------------------------------------------
+* Function: to442_sobel
+* 
+* Description: Takes a grayscaled pixel and applys a sobel filter to it
+* 
+* param a: Mat: the gray scaled image made previously
+* 
+* return: Mat
+*--------------------------------------------------------*/
 Mat to442_sobel(Mat &gray)
 {
     /*
@@ -110,6 +140,7 @@ int main(int argc, char* argv[])
     //add directory and file to get full path
     char* final[100] = {strcat(path,"/")};
     strcat(*final,file);
+    
     //make vidocapture to get each frame form the video
     VideoCapture video(*final);
 
