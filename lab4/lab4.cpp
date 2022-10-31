@@ -1,7 +1,7 @@
 /*********************************************************
 * File: lab4.cpp
 *
-* Description: program takes a video and puts it through a sobel filter
+* Description: program takes a video and puts it through a sobel filter using threads
 *
 * Author: Joshua Alderson
 * 
@@ -21,6 +21,7 @@
 using namespace cv;
 using namespace std;
 
+//struct to hold all of the variables for thread arguments
 typedef struct thread_args
 {
     int start_rows;
@@ -32,21 +33,148 @@ typedef struct thread_args
     Mat sobel;
 }thread_args;
 
-
+//initalize two barriers. One for synching image display and filtered
 pthread_barrier_t display_barrier;
 pthread_barrier_t sobel_barrier;
 
+//global flag to determine when threads should stop
 int trim_threads = 0;
 
+//function prototype
+void *thread_filter(void *args);
+
+
+
+int main(int argc, char* argv[])
+{
+    
+    //create thread variables
+    pthread_t quadrant[4];
+
+    //make array to hold argument structs
+    thread_args argument[4];
+    
+    //set up barriers for use
+    pthread_barrier_init(&sobel_barrier, NULL, 5);
+    pthread_barrier_init(&display_barrier, NULL, 5);
+
+
+    //char array to hold the file name
+    char file[20];
+    //put command line argument in variable
+    strcat(file,argv[1]);
+    //get file path for the image
+    char path[100];
+    getcwd(path, 100);
+ 
+    //add directory and file to get full path
+    char* final[100] = {strcat(path,"/")};
+    strcat(*final,file);
+    
+    //make vidocapture to get each frame form the video
+    VideoCapture video(*final);
+
+    //make Mat to hold each frame
+    Mat vid_frame;
+    //put the captured frame in the frame object
+    video >> vid_frame;
+
+    //make frame to hold the grayscale and filtered image
+    Mat filtered_frame(vid_frame.rows,vid_frame.cols,CV_8UC1);
+    Mat gray_frame(vid_frame.rows,vid_frame.cols,CV_8UC1);
+
+    //initialize arguments for the threads
+    argument[0] = {.start_rows = 1,
+                    .gray_start = 0,
+                    .gray_stop = vid_frame.rows/4,
+                    .stop_rows = vid_frame.rows/4,
+                    .frame = vid_frame,
+                    .gray = gray_frame,
+                    .sobel =  filtered_frame};
+
+    argument[1] = {.start_rows = vid_frame.rows/4 -1,
+                    .gray_start = vid_frame.rows/4 -1,
+                    .gray_stop = vid_frame.rows/2,
+                    .stop_rows =  vid_frame.rows/2,
+                    .frame = vid_frame,
+                    .gray = gray_frame,
+                    .sobel =  filtered_frame};
+
+    argument[2] = {.start_rows = vid_frame.rows/2 - 1,
+                    .gray_start = vid_frame.rows/2 -1,
+                    .gray_stop = (vid_frame.rows *3) / 4,
+                    .stop_rows = (vid_frame.rows *3) / 4,
+                    .frame = vid_frame,
+                    .gray = gray_frame,
+                    .sobel =  filtered_frame};
+
+    argument[3] = {.start_rows = (vid_frame.rows * 3) / 4 - 1,
+                    .gray_start = (vid_frame.rows * 3) / 4 - 1,
+                    .gray_stop =   vid_frame.rows,
+                    .stop_rows =  (vid_frame.rows - 1),
+                    .frame = vid_frame,
+                    .gray = gray_frame,
+                    .sobel =  filtered_frame};
+
+    //create the threads for computation
+    for(int i = 0; i < 4; i++)
+    {
+        //creates a thread at each address of the quadrands, calls the thread_filter,
+        //and passes the argument struct to the function.
+        pthread_create(&quadrant[i], NULL, thread_filter, (void*) &argument[i]);
+    }
+
+    //there will be 5 threads, 4 created and one for main
+    while(1)
+    {
+        //wait for all threads and main to reach the loop
+        pthread_barrier_wait(&sobel_barrier);
+
+        //get new frame for processing
+        video >> vid_frame;
+        if(vid_frame.empty())
+            break;
+        
+        
+        //resize image to fit on 1920x1080 screen
+        namedWindow("vid_frame", WINDOW_NORMAL);
+        resizeWindow("vid_frame", 1920, 1080);
+        
+        //display the frame
+        imshow("vid_frame", filtered_frame);
+
+        //press the escape key to close the player
+        char c = (char)waitKey(25);
+        if(c==27)
+            break;
+        //wait for image to be shown and get a new frame
+        pthread_barrier_wait(&display_barrier);
+    }
+
+    //turn on flag to stop thread loops
+    trim_threads = 1;
+    //call wait one last time for loops to finish
+    pthread_barrier_wait(&display_barrier);
+
+    //clear the memory used for the video capture
+    video.release();
+    //close video player
+    cv::destroyAllWindows();
+    //destroy barriers and resources they used
+    pthread_barrier_destroy(&sobel_barrier);
+    pthread_barrier_destroy(&display_barrier);
+
+    return 0;
+}
 
 /*-----------------------------------------------------
 * Function: thread_filter
 * 
-* Description: 
+* Description: each thread will take in the frame of a video and processing 1/4 of it applying a sobel filter
 * 
-* param a: Mat: 
+* param a: void pointer: start and stop values for image processing and the images to use
 * 
-* return: 
+* return: NULL
 *--------------------------------------------------------*/
 void *thread_filter(void *args)
 {
@@ -133,130 +261,5 @@ void *thread_filter(void *args)
         //wait until a new frame has been aquired
         pthread_barrier_wait(&display_barrier);
     }
-    cout << "returning thread" << endl;
-    return NULL;
-    
+    return NULL;   
 }
-
-
-
-
-
-int main(int argc, char* argv[])
-{
-    
-    //create thread variables
-    pthread_t quadrant[4];
-
-    //make array to hold argument structs
-    thread_args argument[4];
-    
-    int num_threads = 4;
-    //set up barrier for use
-    pthread_barrier_init(&sobel_barrier, NULL, 5);
-    pthread_barrier_init(&display_barrier, NULL, 5);
-
-
-    // //char array to hold the file name
-    // char file[20];
-    // //put command line argument in variable
-    // strcat(file,argv[1]);
-    // //get file path for the image
-    // char path[100];
-    // getcwd(path, 100);
- 
-    // //add directory and file to get full path
-    // char* final[100] = {strcat(path,"/")};
-    // strcat(*final,file);
-    
-    // //make vidocapture to get each frame form the video
-    // VideoCapture video(*final);
-
-    VideoCapture video("/home/josh/Desktop/School/CPE442/lab4/vid.mp4");
-    Mat vid_frame;
-    //put the captured frame in the frame object
-    video >> vid_frame;
-
-    //make frame to hold the filtered image
-    Mat filtered_frame(vid_frame.rows,vid_frame.cols,CV_8UC1);
-    Mat gray_frame(vid_frame.rows,vid_frame.cols,CV_8UC1);
-
-    //initialize arguments for the threads
-    argument[0] = {.start_rows = 1,
-                    .gray_start = 0,
-                    .gray_stop = vid_frame.rows/4,
-                    .stop_rows = vid_frame.rows/4,
-                    .frame = vid_frame,
-                    .gray = gray_frame,
-                    .sobel =  filtered_frame};
-
-    argument[1] = {.start_rows = vid_frame.rows/4 -1,
-                    .gray_start = vid_frame.rows/4 -1,
-                    .gray_stop = vid_frame.rows/2,
-                    .stop_rows =  vid_frame.rows/2,
-                    .frame = vid_frame,
-                    .gray = gray_frame,
-                    .sobel =  filtered_frame};
-
-    argument[2] = {.start_rows = vid_frame.rows/2 - 1,
-                    .gray_start = vid_frame.rows/2 -1,
-                    .gray_stop = (vid_frame.rows *3) / 4,
-                    .stop_rows = (vid_frame.rows *3) / 4,
-                    .frame = vid_frame,
-                    .gray = gray_frame,
-                    .sobel =  filtered_frame};
-
-    argument[3] = {.start_rows = (vid_frame.rows * 3) / 4 - 1,
-                    .gray_start = (vid_frame.rows * 3) / 4 - 1,
-                    .gray_stop =   vid_frame.rows,
-                    .stop_rows =  (vid_frame.rows - 1),
-                    .frame = vid_frame,
-                    .gray = gray_frame,
-                    .sobel =  filtered_frame};
-
-    //create the threads for computation
-    for(int i = 0; i < num_threads; i++)
-    {
-        pthread_create(&quadrant[i], NULL, thread_filter, (void*) &argument[i]);
-    }
-
-    //there will be 5 threads, 4 created and one for main
-    while(1)
-    {
-        //wait for all threads and main to reach the loop
-        pthread_barrier_wait(&sobel_barrier);
-
-        //get new frame for processing
-        video >> vid_frame;
-        if(vid_frame.empty())
-            break;
-        
-        
-        //resize image to fit on 1920x1080 screen
-        namedWindow("vid_frame", WINDOW_NORMAL);
-        resizeWindow("vid_frame", 1920, 1080);
-        
-        //display the frame
-        imshow("vid_frame", filtered_frame);
-
-        //press the escape key to close the player
-        char c = (char)waitKey(25);
-        if(c==27)
-            break;
-        //wait for image to be shown and get a new frame
-        pthread_barrier_wait(&display_barrier);
-    }
-
-    trim_threads = 1;
-    pthread_barrier_wait(&display_barrier);
-    //clear the memory used for the video capture
-    video.release();
-    cv::destroyAllWindows();
-    pthread_barrier_destroy(&sobel_barrier);
-    pthread_barrier_destroy(&display_barrier);
-    //close the video player
-    
-    
-    return 0;
-}
-
