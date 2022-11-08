@@ -229,9 +229,9 @@ void *thread_filter(void *args)
         //multiples the red pixels by the red number then stores them in the holder vector
         holder_vect = vmull_u8(colors.val[0], r_num);
         //multiplies the green pixels by the number then adds it to the values in the  holder vector
-        holder_vect = vmlal_u8(colors.val[1], g_num);
+        holder_vect = vmlal_u8(holder_vect, colors.val[1], g_num);
         //multiples the blue pixels by the blue number then adds it to the values in the holder vector
-        holder_vect = vmlal_u8(colors.val[2], b_num);
+        holder_vect = vmlal_u8(holder_vect, colors.val[2], b_num);
 
         //bit shift the values from the holder vector to narrow them down from 16 to 8 bits
         gray_vect = vshrn_n_u16(holder_vect, 8);
@@ -265,6 +265,7 @@ void *thread_filter(void *args)
 
     int16x8_t gx_holder_vect;
     int16x8_t gy_holder_vect;
+    uint16x8_t min_comp_vect = vdup_n_u16(255);
     uint8x8_t sobel_vect;
 
 
@@ -273,8 +274,6 @@ void *thread_filter(void *args)
     for(int i = start; i < pixel_num; i++)
     {
         //load the first 3 elements for sobel calculations and put them in vectors
-        //TODO: make this so it is offset for each row
-        //TODO: make this is it disregards the first and last column
         sobel_row1 = vld3_u8(gray_data); // p1,p2,p3 but as vectors
         sobel_row2 = vld3_u8(gray_data); // p4,p5,p6 in vectors. don't use the p5 vector so it is a bit wasteful but more convienent
         sobel_row3 = vld3_u8(gray_data); // p7,p8,p9
@@ -286,11 +285,11 @@ void *thread_filter(void *args)
         //add p3 vect
         gx_holder_vect = vadd_s8(sobel_row1.val[2], gx_holder_vect);
         //multiply p4 by -2 and add
-        gx_holder_vect = vmlal_s8(sobel_row2.val[0], neg2_vect);
+        gx_holder_vect = vmlal_s8(gx_holder_vect, gx_holder_vect, sobel_row2.val[0], neg2_vect);
         //multiply p6 by 2 and add
-        gx_holder_vect = vmlal_s8(sobel_row2.val[1], two_vect);
+        gx_holder_vect = vmlal_s8(gx_holder_vect, sobel_row2.val[1], two_vect);
         //multiply p7 by -1 and add
-        gx_holder_vect = vmlal_s8(sobel_row3.val[0], neg1_vect);
+        gx_holder_vect = vmlal_s8(gx_holder_vect, sobel_row3.val[0], neg1_vect);
         //add p9 vect
         gx_holder_vect = vadd_s8(sobel_row3.val[2], gx_holder_vect);
 
@@ -302,84 +301,87 @@ void *thread_filter(void *args)
         //add p1 vect
         gy_holder_vect = vadd_s8(sobel_row1.val[0], gx_holder_vect);
         //multiply p2 by 2 and add
-        gy_holder_vect = vmlal_u8(sobel_row1.val[1], two_vect);
+        gy_holder_vect = vmlal_u8(gy_holder_vect, sobel_row1.val[1], two_vect);
         //add p3 vect
         gy_holder_vect = vadd_s8(sobel_row1.val[2], gx_holder_vect);;
         //multiply p7 by -1 and add
-        gy_holder_vect = vmlal_u8(sobel_row3.val[0], neg1_vect);
+        gy_holder_vect = vmlal_u8(gy_holder_vect, sobel_row3.val[0], neg1_vect);
         //multiply p8 by -2 and add
-        gy_holder_vect = vmlal_u8(sobel_row3.val[1], neg2_vect);
+        gy_holder_vect = vmlal_u8(gy_holder_vect, sobel_row3.val[1], neg2_vect);
         //multply p9 by -1 and add
-        gy_holder_vect = vmlal_u8(sobel_row3.val[2], neg1_vect);
+        gy_holder_vect = vmlal_u8(gy_holder_vect, sobel_row3.val[2], neg1_vect);
 
         //get the absolute value of the vector
         gy_holder_vect = vabsq_s16(gy_holder_vect);
         /***************************************************/
-
-        //add the vectors (truncate the value to 255 if above)
-        //change back 8 bit value before storing the values
+        //add gx and gy
+        sobel_vect = vaddq_u16(gx_holder_vect, gy_holder_vect);
+        //get the min between G and the 255 vector
+        sobel_vect = vmin_u16(sobel_vect, min_comp_vect);
+        //narrow the vector to 8 bits
+        
 
         //store the values in memory
-        vst1_u8(filter_data, gray_vect);
+        vst1_u8(filter_data, sobel_vect);
     }
 
 
 
     while(!trim_threads)
     {
-        //apply gray scaling to pixels
-        for(int row = start_gray; row < stop_gray; row++)
-        {
-            for(int col = 0; col < frame.cols; col++)
-            {
-                //get the Blue, Red, and Green pixel values
-                B = pixel[row*frame.cols*RGB + col*RGB + 0];
-                G = pixel[row*frame.cols*RGB + col*RGB + 1];       
-                R = pixel[row*frame.cols*RGB + col*RGB + 2];
+        // //apply gray scaling to pixels
+        // for(int row = start_gray; row < stop_gray; row++)
+        // {
+        //     for(int col = 0; col < frame.cols; col++)
+        //     {
+        //         //get the Blue, Red, and Green pixel values
+        //         B = pixel[row*frame.cols*RGB + col*RGB + 0];
+        //         G = pixel[row*frame.cols*RGB + col*RGB + 1];       
+        //         R = pixel[row*frame.cols*RGB + col*RGB + 2];
 
-                //apply grayscale filter
-                gray = 0.2126*R + 0.7152*G + 0.0722*B;
+        //         //apply grayscale filter
+        //         gray = 0.2126*R + 0.7152*G + 0.0722*B;
 
-                //put filtered pixel into grayscale data
-                gray_pix[row*frame.cols + col] = gray;
-            }
-        }
+        //         //put filtered pixel into grayscale data
+        //         gray_pix[row*frame.cols + col] = gray;
+        //     }
+        // }
 
-        //apply sobel filtering
-        for(int sob_row = start_row; sob_row < stop_row; sob_row++)
-        {
-            for(int sob_col = 1; sob_col < (graycale.cols - 1); sob_col++)
-            {
+        // //apply sobel filtering
+        // for(int sob_row = start_row; sob_row < stop_row; sob_row++)
+        // {
+        //     for(int sob_col = 1; sob_col < (graycale.cols - 1); sob_col++)
+        //     {
                 
-                //apply sobel filter to X direction
-                // X: -1P1 -2P4 -P7 + P3 + 2P6 + P7 
-                gx = - gray_pix[(sob_row - 1)*graycale.cols + (sob_col-1)]
-                    - 2*gray_pix[sob_row*graycale.cols + (sob_col - 1)]
-                    - gray_pix[(sob_row + 1)*graycale.cols + (sob_col-1)]
-                    + gray_pix[(sob_row - 1)*graycale.cols + (sob_col+1)]
-                    + 2*gray_pix[sob_row*graycale.cols + (sob_col + 1)]
-                    + gray_pix[(sob_row + 1)*graycale.cols + (sob_col-1)];
+        //         //apply sobel filter to X direction
+        //         // X: -1P1 -2P4 -P7 + P3 + 2P6 + P7 
+        //         gx = - gray_pix[(sob_row - 1)*graycale.cols + (sob_col-1)]
+        //             - 2*gray_pix[sob_row*graycale.cols + (sob_col - 1)]
+        //             - gray_pix[(sob_row + 1)*graycale.cols + (sob_col-1)]
+        //             + gray_pix[(sob_row - 1)*graycale.cols + (sob_col+1)]
+        //             + 2*gray_pix[sob_row*graycale.cols + (sob_col + 1)]
+        //             + gray_pix[(sob_row + 1)*graycale.cols + (sob_col-1)];
 
-                //apply sobel filter to Y direction
-                // Y: P1 - P7 + 2P2 -2P8 + P3 -P9
-                gy =   gray_pix[(sob_row - 1)*graycale.cols + (sob_col-1)]
-                    - gray_pix[(sob_row + 1)*graycale.cols + (sob_col-1)]
-                    + 2*gray_pix[(sob_row - 1)*graycale.cols + sob_col]
-                    - 2*gray_pix[(sob_row + 1)*graycale.cols + sob_col]
-                    + gray_pix[(sob_row - 1)*graycale.cols + (sob_col+1)]
-                    - gray_pix[(sob_row + 1)*graycale.cols + sob_col];
+        //         //apply sobel filter to Y direction
+        //         // Y: P1 - P7 + 2P2 -2P8 + P3 -P9
+        //         gy =   gray_pix[(sob_row - 1)*graycale.cols + (sob_col-1)]
+        //             - gray_pix[(sob_row + 1)*graycale.cols + (sob_col-1)]
+        //             + 2*gray_pix[(sob_row - 1)*graycale.cols + sob_col]
+        //             - 2*gray_pix[(sob_row + 1)*graycale.cols + sob_col]
+        //             + gray_pix[(sob_row - 1)*graycale.cols + (sob_col+1)]
+        //             - gray_pix[(sob_row + 1)*graycale.cols + sob_col];
 
-                //calculate the gradient for new pixel value
-                grad = abs(gx) + abs(gy);
+        //         //calculate the gradient for new pixel value
+        //         grad = abs(gx) + abs(gy);
 
-                //check if new value is above the largest 8bit value and replace if needed
-                if(grad > 255)
-                    grad = 255;
+        //         //check if new value is above the largest 8bit value and replace if needed
+        //         if(grad > 255)
+        //             grad = 255;
                 
-                //put the calculated value in the sobel array
-                filter_pix[sob_row*graycale.cols + sob_col] = (uchar) grad;
-            }
-        }
+        //         //put the calculated value in the sobel array
+        //         filter_pix[sob_row*graycale.cols + sob_col] = (uchar) grad;
+        //     }
+        // }
         
         //wait for all threads to finish processing the filtered image
         pthread_barrier_wait(&sobel_barrier);
