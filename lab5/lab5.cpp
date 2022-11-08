@@ -265,7 +265,7 @@ void *thread_filter(void *args)
 
     int16x8_t gx_holder_vect;
     int16x8_t gy_holder_vect;
-    uint16x8_t min_comp_vect = vdup_n_u16(255);
+    uint16x8_t min_comp_vect = vdupq_n_u16(255);
     uint8x8_t sobel_vect;
 
 
@@ -285,7 +285,7 @@ void *thread_filter(void *args)
         //add p3 vect
         gx_holder_vect = vadd_s8(sobel_row1.val[2], gx_holder_vect);
         //multiply p4 by -2 and add
-        gx_holder_vect = vmlal_s8(gx_holder_vect, gx_holder_vect, sobel_row2.val[0], neg2_vect);
+        gx_holder_vect = vmlal_s8(gx_holder_vect, sobel_row2.val[0], neg2_vect);
         //multiply p6 by 2 and add
         gx_holder_vect = vmlal_s8(gx_holder_vect, sobel_row2.val[1], two_vect);
         //multiply p7 by -1 and add
@@ -301,15 +301,15 @@ void *thread_filter(void *args)
         //add p1 vect
         gy_holder_vect = vadd_s8(sobel_row1.val[0], gx_holder_vect);
         //multiply p2 by 2 and add
-        gy_holder_vect = vmlal_u8(gy_holder_vect, sobel_row1.val[1], two_vect);
+        gy_holder_vect = vmlal_s8(gy_holder_vect, sobel_row1.val[1], two_vect);
         //add p3 vect
         gy_holder_vect = vadd_s8(sobel_row1.val[2], gx_holder_vect);;
         //multiply p7 by -1 and add
-        gy_holder_vect = vmlal_u8(gy_holder_vect, sobel_row3.val[0], neg1_vect);
+        gy_holder_vect = vmlal_s8(gy_holder_vect, sobel_row3.val[0], neg1_vect);
         //multiply p8 by -2 and add
-        gy_holder_vect = vmlal_u8(gy_holder_vect, sobel_row3.val[1], neg2_vect);
+        gy_holder_vect = vmlal_s8(gy_holder_vect, sobel_row3.val[1], neg2_vect);
         //multply p9 by -1 and add
-        gy_holder_vect = vmlal_u8(gy_holder_vect, sobel_row3.val[2], neg1_vect);
+        gy_holder_vect = vmlal_s8(gy_holder_vect, sobel_row3.val[2], neg1_vect);
 
         //get the absolute value of the vector
         gy_holder_vect = vabsq_s16(gy_holder_vect);
