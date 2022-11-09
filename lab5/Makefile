@@ -8,7 +8,7 @@ lab5:
 	${CC} -o ${OUT} ${SRCS} `pkg-config --cflags --libs opencv4` ${CFLAGS}
 
 lab5_nt:
-	${CC} -o test ${SRCS} `pkg-config --cflags --libs opencv4` ${CFLAGS}
+	${CC} -o test lab5_nothread.cpp `pkg-config --cflags --libs opencv4` ${CFLAGS}
 # lab4:
 # 	g++ -o lab5 lab5.cpp `pkg-config opencv4 --cflags --libs` -lpthread -O0
 	
