@@ -282,30 +282,26 @@ void *thread_filter(void *args)
 
         //multiply and add correct kernal values
         /*****************gx calculations********************/
+        //add p9 and p3 together and store in holder
+        gx_holder_vect = vaddl_s8(sobel_row1.val[2], sobel_row3.val[2]);
         //multiple p1 vect by -1
-        gx_holder_vect = vmull_s8(sobel_row1.val[0], neg1_vect);
-        //add p3 vect
-        gx_holder_vect = vadd_s8(sobel_row1.val[2], gx_holder_vect);
+        gx_holder_vect = vmlal_s8(sobel_row1.val[0], neg1_vect);
         //multiply p4 by -2 and add
         gx_holder_vect = vmlal_s8(gx_holder_vect, sobel_row2.val[0], neg2_vect);
         //multiply p6 by 2 and add
         gx_holder_vect = vmlal_s8(gx_holder_vect, sobel_row2.val[1], two_vect);
         //multiply p7 by -1 and add
         gx_holder_vect = vmlal_s8(gx_holder_vect, sobel_row3.val[0], neg1_vect);
-        //add p9 vect
-        gx_holder_vect = vadd_s8(sobel_row3.val[2], gx_holder_vect);
 
         //get the absolute value of the vector 
         gx_holder_vect = vabsq_s16(gx_holder_vect);
         /***************************************************/
 
         /*****************gy calculations********************/
-        //add p1 vect
-        gy_holder_vect = vadd_s8(sobel_row1.val[0], gx_holder_vect);
+        //add p3 and p1 together and store in hold
+        gy_holder_vect = vaddl_s8(sobel_row1.val[0], sobel_row1.val[2]);
         //multiply p2 by 2 and add
         gy_holder_vect = vmlal_s8(gy_holder_vect, sobel_row1.val[1], two_vect);
-        //add p3 vect
-        gy_holder_vect = vadd_s8(sobel_row1.val[2], gx_holder_vect);;
         //multiply p7 by -1 and add
         gy_holder_vect = vmlal_s8(gy_holder_vect, sobel_row3.val[0], neg1_vect);
         //multiply p8 by -2 and add
@@ -320,11 +316,9 @@ void *thread_filter(void *args)
         sobel_vect = vaddq_u16(gx_holder_vect, gy_holder_vect);
         //get the min between G and the 255 vector
         sobel_vect = vmin_u16(sobel_vect, min_comp_vect);
-        //narrow the vector to 8 bits
         
-
-        //store the values in memory
-        vst1_u8(filter_data, sobel_vect);
+        //narrow vector to 8 bits and store the values in memory
+        vst1_u8(filter_data, vmovn_u16(sobel_vect));
     }
 
 
