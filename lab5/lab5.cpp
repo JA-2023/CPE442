@@ -202,11 +202,11 @@ void *thread_filter(void *args)
     //make vectors that hold the constants to multiply by
     //r_num
     //fills a vector with the value listed
-    uint8x8_t r_num = vdup_n_u8(0.2126);
+    uint8x8_t r_num = vdup_n_u8(77);
     //b_num
-    uint8x8_t b_num = vdup_n_u8(0.0722);
+    uint8x8_t b_num = vdup_n_u8(29);
     //g_num
-    uint8x8_t g_num = vdup_n_u8(0.0722); 
+    uint8x8_t g_num = vdup_n_u8(150); 
 
     //variable to hole the intermidate values (16 bit values)
     uint16x8_t holder_vect;
