@@ -266,7 +266,7 @@ void *thread_filter(void *args)
     int16x8_t gx_holder_vect;
     int16x8_t gy_holder_vect;
     uint16x8_t min_comp_vect = vdupq_n_u16(255);
-    uint8x8_t sobel_vect;
+    uint16x8_t sobel_vect;
 
 
     uchar gray_vals[8];
@@ -285,7 +285,7 @@ void *thread_filter(void *args)
         //add p9 and p3 together and store in holder
         gx_holder_vect = vaddl_s8(sobel_row1.val[2], sobel_row3.val[2]);
         //multiple p1 vect by -1
-        gx_holder_vect = vmlal_s8(sobel_row1.val[0], neg1_vect);
+        gx_holder_vect = vmlal_s8(gx_holder_vect, sobel_row1.val[0], neg1_vect);
         //multiply p4 by -2 and add
         gx_holder_vect = vmlal_s8(gx_holder_vect, sobel_row2.val[0], neg2_vect);
         //multiply p6 by 2 and add
@@ -313,10 +313,10 @@ void *thread_filter(void *args)
         gy_holder_vect = vabsq_s16(gy_holder_vect);
         /***************************************************/
         //add gx and gy
-        sobel_vect = vaddq_u16(gx_holder_vect, gy_holder_vect);
+        sobel_vect = vaddq_s16(gx_holder_vect, gy_holder_vect);
         //get the min between G and the 255 vector
-        sobel_vect = vmin_u16(sobel_vect, min_comp_vect);
-        
+        sobel_vect = vminq_u16(sobel_vect, min_comp_vect);
+
         //narrow vector to 8 bits and store the values in memory
         vst1_u8(filter_data, vmovn_u16(sobel_vect));
     }
@@ -325,59 +325,7 @@ void *thread_filter(void *args)
 
     while(!trim_threads)
     {
-        // //apply gray scaling to pixels
-        // for(int row = start_gray; row < stop_gray; row++)
-        // {
-        //     for(int col = 0; col < frame.cols; col++)
-        //     {
-        //         //get the Blue, Red, and Green pixel values
-        //         B = pixel[row*frame.cols*RGB + col*RGB + 0];
-        //         G = pixel[row*frame.cols*RGB + col*RGB + 1];       
-        //         R = pixel[row*frame.cols*RGB + col*RGB + 2];
 
-        //         //apply grayscale filter
-        //         gray = 0.2126*R + 0.7152*G + 0.0722*B;
-
-        //         //put filtered pixel into grayscale data
-        //         gray_pix[row*frame.cols + col] = gray;
-        //     }
-        // }
-
-        // //apply sobel filtering
-        // for(int sob_row = start_row; sob_row < stop_row; sob_row++)
-        // {
-        //     for(int sob_col = 1; sob_col < (graycale.cols - 1); sob_col++)
-        //     {
-                
-        //         //apply sobel filter to X direction
-        //         // X: -1P1 -2P4 -P7 + P3 + 2P6 + P7 
-        //         gx = - gray_pix[(sob_row - 1)*graycale.cols + (sob_col-1)]
-        //             - 2*gray_pix[sob_row*graycale.cols + (sob_col - 1)]
-        //             - gray_pix[(sob_row + 1)*graycale.cols + (sob_col-1)]
-        //             + gray_pix[(sob_row - 1)*graycale.cols + (sob_col+1)]
-        //             + 2*gray_pix[sob_row*graycale.cols + (sob_col + 1)]
-        //             + gray_pix[(sob_row + 1)*graycale.cols + (sob_col-1)];
-
-        //         //apply sobel filter to Y direction
-        //         // Y: P1 - P7 + 2P2 -2P8 + P3 -P9
-        //         gy =   gray_pix[(sob_row - 1)*graycale.cols + (sob_col-1)]
-        //             - gray_pix[(sob_row + 1)*graycale.cols + (sob_col-1)]
-        //             + 2*gray_pix[(sob_row - 1)*graycale.cols + sob_col]
-        //             - 2*gray_pix[(sob_row + 1)*graycale.cols + sob_col]
-        //             + gray_pix[(sob_row - 1)*graycale.cols + (sob_col+1)]
-        //             - gray_pix[(sob_row + 1)*graycale.cols + sob_col];
-
-        //         //calculate the gradient for new pixel value
-        //         grad = abs(gx) + abs(gy);
-
-        //         //check if new value is above the largest 8bit value and replace if needed
-        //         if(grad > 255)
-        //             grad = 255;
-                
-        //         //put the calculated value in the sobel array
-        //         filter_pix[sob_row*graycale.cols + sob_col] = (uchar) grad;
-        //     }
-        // }
         
         //wait for all threads to finish processing the filtered image
         pthread_barrier_wait(&sobel_barrier);
