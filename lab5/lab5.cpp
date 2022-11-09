@@ -256,9 +256,9 @@ void *thread_filter(void *args)
     //store these values in the sobel filter
 
     //make vectors for kernal values that are not 1 or 0
-    int8x8_t neg1_vect = vdupq_n_s16(-1);
-    int8x8_t neg2_vect = vdupq_n_s16(-2);
-    int8x8_t two_vect = vdupq_n_s16(2);
+    int8x8_t neg1_vect = vdup_n_s8(-1);
+    int8x8_t neg2_vect = vdup_n_s8(-2);
+    int8x8_t two_vect = vdup_n_s8(2);
     uint8x8x3_t sobel_row1; 
     uint8x8x3_t sobel_row2; 
     uint8x8x3_t sobel_row3; 
