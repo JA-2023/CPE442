@@ -131,7 +131,7 @@ Mat to442_sobel(Mat &gray)
         //X: -P1 -2P4 -P7 + P3 + 2P6 + P9
         //|-(p1 + p7) + (p3 + p9) + (2P6 - 2P4)|
         gx_holder_vect = vabsq_s16(
-                  vaddq_u16(vsubq_u16(vshll_n_u8(sobel_row2[2],1), vshll_n_u8(sobel_row2[0],1))//2P6 - 2P4
+                  vaddq_u16(vsubq_u16(vshll_n_u8(sobel_row2.val[2],1), vshll_n_u8(sobel_row2.val[0],1))//2P6 - 2P4
                  ,vsubq_u16(vaddl_u8(sobel_row1.val[2], sobel_row3.val[2])//p3 + p9
                             ,vaddl_u8(sobel_row1.val[2], sobel_row3.val[2]))))//p1 + p7
         /***************************************************/
@@ -139,9 +139,9 @@ Mat to442_sobel(Mat &gray)
         /*****************gy calculations********************/
         //Y: P1 - P7 + 2P2 - 2P8 + P3 -P9
         //|(P1 + P3) - (P7 + P9) + (2P2 - 2P8)|
-        gy_holder_vect = vabsq_s16(vaddq_u16((vsubq_u16(vaddl_s8(sobel_row1[0],sobel_row1[2]), //P1 + P3
-                                    vaddl_s8(sobel_row3[0],sobel_row3[2])), //P7 + P9
-                          vsubq_u16(vshll_n_u8(sobel_row1[1],1),vshll_n_u8(sobel_row3[2],1))))); //2P2 - 2P8
+        gy_holder_vect = vabsq_s16(vaddq_u16((vsubq_u16(vaddl_s8(sobel_row1.val[0],sobel_row1.val[2]), //P1 + P3
+                                    vaddl_s8(sobel_row3.val[0],sobel_row3.val[2])), //P7 + P9
+                          vsubq_u16(vshll_n_u8(sobel_row1.val[1],1),vshll_n_u8(sobel_row3.val[2],1))))); //2P2 - 2P8
 
         /***************************************************/
         //add gx and gy
