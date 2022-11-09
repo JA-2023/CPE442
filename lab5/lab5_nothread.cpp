@@ -102,7 +102,7 @@ Mat to442_sobel(Mat &gray)
 
     //Mat object to hold sobel data
     Mat sobel(gray.rows,gray.cols,CV_8UC1);
-    uchar *gray_data = (uchar*) grayscale.data;
+    uchar *gray_data = (uchar*) gray.data;
     uchar *filter_data = (uchar*) sobel.data;
 
     //make vectors for kernal values that are not 1 or 0
