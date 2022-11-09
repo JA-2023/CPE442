@@ -133,7 +133,7 @@ Mat to442_sobel(Mat &gray)
         gx_holder_vect = vabsq_s16(
                   vaddq_u16(vsubq_u16(vshll_n_u8(sobel_row2.val[2],1), vshll_n_u8(sobel_row2.val[0],1))//2P6 - 2P4
                  ,vsubq_u16(vaddl_u8(sobel_row1.val[2], sobel_row3.val[2])//p3 + p9
-                            ,vaddl_u8(sobel_row1.val[2], sobel_row3.val[2]))))//p1 + p7
+                            ,vaddl_u8(sobel_row1.val[2], sobel_row3.val[2]))));//p1 + p7
         /***************************************************/
 
         /*****************gy calculations********************/
