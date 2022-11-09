@@ -9,7 +9,7 @@
 *
 **********************************************************/
 
-#include <opencv2/highgui.hpp> 
+#include <opencv2/opencv.hpp> 
 #include <pthread.h>
 #include <arm_neon.h>
 #include <iostream>
@@ -73,8 +73,8 @@ int main(int argc, char* argv[])
     //make vidocapture to get each frame form the video
     //VideoCapture video(*final);
 
-    VideoCapture video("/home/josh/Desktop/School/CPE442/lab5/vid");
-    
+    // VideoCapture video("/home/josh/Desktop/School/CPE442/lab5/vid");
+    VideoCapture video("/home/CPE/Desktop/CPE442/lab5/vid.mp4");
     //make Mat to hold each frame
     Mat vid_frame;
     //put the captured frame in the frame object
