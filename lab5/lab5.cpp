@@ -221,7 +221,7 @@ void *thread_filter(void *args)
     int pixel_num = stop/8;
 
     //for loop
-    for(int i = start; i < pixel_num; i++)
+    for(int i = start; i < pixel_num; i++, pixel += 8 * 3, gray_data += 8)
     {
         //takes the RGB data and breaks in into 3 8x8 vectors each having one color
         colors = vld3_u8(pixel); //TODO: might need to change this to include an offset pixel + start?
@@ -271,7 +271,7 @@ void *thread_filter(void *args)
 
     uchar gray_vals[8];
     //TODO: check to see if I need to change this from pix num to something else
-    for(int i = start; i < pixel_num; i++)
+    for(int i = start; i < pixel_num; i++, gray_data += 8, filter_data += 8)
     {
         //load the first 3 elements for sobel calculations and put them in vectors
         //TODO: need to get row offsets?
