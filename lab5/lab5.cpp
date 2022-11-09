@@ -256,9 +256,9 @@ void *thread_filter(void *args)
     //store these values in the sobel filter
 
     //make vectors for kernal values that are not 1 or 0
-    int16x8_t neg1_vect = vdupq_n_s16(-1);
-    int16x8_t neg2_vect = vdupq_n_s16(-2);
-    int16x8_t two_vect = vdupq_n_s16(2);
+    int8x8_t neg1_vect = vdupq_n_s16(-1);
+    int8x8_t neg2_vect = vdupq_n_s16(-2);
+    int8x8_t two_vect = vdupq_n_s16(2);
     uint8x8x3_t sobel_row1; 
     uint8x8x3_t sobel_row2; 
     uint8x8x3_t sobel_row3; 
@@ -274,14 +274,11 @@ void *thread_filter(void *args)
     for(int i = start; i < pixel_num; i++)
     {
         //load the first 3 elements for sobel calculations and put them in vectors
+        //TODO: need to get row offsets?
         sobel_row1 = vld3_u8(gray_data); // p1,p2,p3 but as vectors
         sobel_row2 = vld3_u8(gray_data); // p4,p5,p6 in vectors. don't use the p5 vector so it is a bit wasteful but more convienent
         sobel_row3 = vld3_u8(gray_data); // p7,p8,p9
 
-        //TODO: type cast these values to int16x8_t
-        int16x8_t vreinterpretq_s16_u8(sobel_row1);
-        int16x8_t vreinterpretq_s16_u8(sobel_row1);
-        int16x8_t vreinterpretq_s16_u8(sobel_row1);
 
         //multiply and add correct kernal values
         /*****************gx calculations********************/
