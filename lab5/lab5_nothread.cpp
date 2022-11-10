@@ -192,7 +192,7 @@ int main(int argc, char* argv[])
         // resizeWindow("vid_frame", 1920, 1080);
 
         //display the frame
-        imshow("Frame", sobel);
+        imshow("Frame", gray_scale);
         
         //press the escape key to close the player
         char c = (char)waitKey(25);
