@@ -40,11 +40,11 @@ Mat to442_grayscale(Mat &image, Mat &grayscale)
     //make vectors that hold the constants to multiply by
     //r_num
     //fills a vector with the value listed
-    uint8x8_t r_num = vdup_n_u8(77);
+    uint8x8_t r_num = vdup_n_u8(0.2126);
     //b_num
-    uint8x8_t b_num = vdup_n_u8(29);
+    uint8x8_t b_num = vdup_n_u8(0.0722);
     //g_num
-    uint8x8_t g_num = vdup_n_u8(150); 
+    uint8x8_t g_num = vdup_n_u8(0.7152); 
 
     //variable to hole the intermidate values (16 bit values)
     uint16x8_t holder_vect;
@@ -105,10 +105,6 @@ Mat to442_sobel(Mat &gray)
     uchar *gray_data = (uchar*) gray.data;
     uchar *filter_data = (uchar*) sobel.data;
 
-    //make vectors for kernal values that are not 1 or 0
-    // uint8x8x3_t sobel_row1; 
-    // uint8x8x3_t sobel_row2; 
-    // uint8x8x3_t sobel_row3; 
     uint8x8_t p1,p2,p3,p4,p6,p7,p8,p9;
     int16x8_t gx_holder_vect;
     int16x8_t gy_holder_vect;
@@ -129,30 +125,7 @@ Mat to442_sobel(Mat &gray)
         p7 = vld1_u8(gray_data + 2*gray.cols);
         p8 = vld1_u8(gray_data + 2*gray.cols + 1);
         p9 = vld1_u8(gray_data + 2*gray.cols + 2);
-        // sobel_row1 = vld3_u8(gray_data); // p1,p2,p3 but as vectors
-        // sobel_row2 = vld3_u8(gray_data + gray.cols); // p4,p5,p6 in vectors. don't use the p5 vector so it is a bit wasteful but more convienent
-        // sobel_row3 = vld3_u8(gray_data + gray.cols * 2); // p7,p8,p9
 
-
-        // //multiply and add correct kernal values
-        // /*****************gx calculations********************/
-        // //X: -P1 -2P4 -P7 + P3 + 2P6 + P9
-        // //|-(p1 + p7) + (p3 + p9) + (2P6 - 2P4)|
-        // gx_holder_vect = vabsq_s16(
-        //           vaddq_u16(vsubq_u16(vshll_n_u8(sobel_row2.val[2],1), vshll_n_u8(sobel_row2.val[0],1))//2P6 - 2P4
-        //          ,vsubq_u16(vaddl_u8(sobel_row1.val[2], sobel_row3.val[2])//p3 + p9
-        //                     ,vaddl_u8(sobel_row1.val[2], sobel_row3.val[2]))));//p1 + p7
-        // /***************************************************/
-
-        // /*****************gy calculations********************/
-        // //Y: P1 - P7 + 2P2 - 2P8 + P3 -P9
-        // //|(P1 + P3) - (P7 + P9) + (2P2 - 2P8)|
-        // gy_holder_vect = vabsq_s16(
-        //                  vaddq_u16(vsubq_u16(vaddl_s8(sobel_row1.val[0],sobel_row1.val[2]), //P1 + P3
-        //                                      vaddl_s8(sobel_row3.val[0],sobel_row3.val[2])), //P7 + P9
-        //                                      vsubq_u16(vshll_n_u8(sobel_row1.val[1],1),vshll_n_u8(sobel_row3.val[2],1)))); //2P2 - 2P8
-        
-        // /***************************************************/
 
                 //multiply and add correct kernal values
         /*****************gx calculations********************/
