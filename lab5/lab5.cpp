@@ -278,8 +278,8 @@ void *thread_filter(void *args)
             //Y: P1 - P7 + 2P2 - 2P8 + P3 -P9
             //|(P1 + P3) - (P7 + P9) + (2P2 - 2P8)|
             gy_holder_vect = vabsq_s16(
-                            vaddq_s16(vsubq_s16(vaddl_s8(p1,p3), //P1 + P3
-                                                vaddl_s8(p7,p9)), //P7 + P9
+                            vaddq_s16(vsubq_s16(vaddl_u8(p1,p3), //P1 + P3
+                                                vaddl_u8(p7,p9)), //P7 + P9
                                                 vsubq_s16(vshll_n_u8(p2,1),vshll_n_u8(p8,1)))); //2P2 - 2P8
             
             /***************************************************/
