@@ -139,10 +139,11 @@ Mat to442_sobel(Mat &gray)
         /*****************gy calculations********************/
         //Y: P1 - P7 + 2P2 - 2P8 + P3 -P9
         //|(P1 + P3) - (P7 + P9) + (2P2 - 2P8)|
-        gy_holder_vect = vabsq_s16(vaddq_u16((vsubq_u16(vaddl_s8(sobel_row1.val[0],sobel_row1.val[2]), //P1 + P3
-                                    vaddl_s8(sobel_row3.val[0],sobel_row3.val[2])), //P7 + P9
-                          vsubq_u16(vshll_n_u8(sobel_row1.val[1],1),vshll_n_u8(sobel_row3.val[2],1))))); //2P2 - 2P8
-
+        gy_holder_vect = vabsq_s16(
+                         vaddq_u16(vsubq_u16(vaddl_s8(sobel_row1.val[0],sobel_row1.val[2]), //P1 + P3
+                                             vaddl_s8(sobel_row3.val[0],sobel_row3.val[2])), //P7 + P9
+                                             vsubq_u16(vshll_n_u8(sobel_row1.val[1],1),vshll_n_u8(sobel_row3.val[2],1)))); //2P2 - 2P8
+        
         /***************************************************/
         //add gx and gy
         sobel_vect = vaddq_s16(gx_holder_vect, gy_holder_vect);
