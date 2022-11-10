@@ -247,55 +247,52 @@ void *thread_filter(void *args)
         }
             
 
-        uint8x8_t p1,p2,p3,p4,p6,p7,p8,p9;
-        int16x8_t gx_holder_vect;
-        int16x8_t gy_holder_vect;
-        uint16x8_t min_comp_vect = vdupq_n_u16(255);
-        uint16x8_t sobel_vect;
+        // uint8x8_t p1,p2,p3,p4,p6,p7,p8,p9;
+        // int16x8_t gx_holder_vect;
+        // int16x8_t gy_holder_vect;
+        // uint16x8_t min_comp_vect = vdupq_n_u16(255);
+        // uint16x8_t sobel_vect;
+
+        // for(int i = start; i < pixel_num; i++, gray_data += 8, filter_data += 8)
+        // {
+        //     //load the first 3 elements for sobel calculations and put them in vectors
+        //     p1 = vld1_u8(gray_data);
+        //     p2 = vld1_u8(gray_data + 1);
+        //     p3 = vld1_u8(gray_data + 2);
+        //     p4 = vld1_u8(gray_data + graycale.cols);
+        //     p6 = vld1_u8(gray_data + graycale.cols + 2);
+        //     p7 = vld1_u8(gray_data + 2*graycale.cols);
+        //     p8 = vld1_u8(gray_data + 2*graycale.cols + 1);
+        //     p9 = vld1_u8(gray_data + 2*graycale.cols + 2);
 
 
-        uchar gray_vals[8];
-        //TODO: check to see if I need to change this from pix num to something else
-        for(int i = start; i < pixel_num; i++, gray_data += 8, filter_data += 8)
-        {
-            //load the first 3 elements for sobel calculations and put them in vectors
-            p1 = vld1_u8(gray_data);
-            p2 = vld1_u8(gray_data + 1);
-            p3 = vld1_u8(gray_data + 2);
-            p4 = vld1_u8(gray_data + graycale.cols);
-            p6 = vld1_u8(gray_data + graycale.cols + 2);
-            p7 = vld1_u8(gray_data + 2*graycale.cols);
-            p8 = vld1_u8(gray_data + 2*graycale.cols + 1);
-            p9 = vld1_u8(gray_data + 2*graycale.cols + 2);
+        //     //multiply and add correct kernal values
+        //     /*****************gx calculations********************/
+        //     //X: -P1 -2P4 -P7 + P3 + 2P6 + P9
+        //     //|-(p1 + p7) + (p3 + p9) + (2P6 - 2P4)|
+        //     gx_holder_vect = vabsq_s16(
+        //             vaddq_u16(vsubq_u16(vshll_n_u8(p6,1), vshll_n_u8(p4,1))//2P6 - 2P4
+        //             ,vsubq_u16(vaddl_u8(p3, p9)//p3 + p9
+        //                         ,vaddl_u8(p1, p7))));//p1 + p7
+        //     /***************************************************/
 
-
-            //multiply and add correct kernal values
-            /*****************gx calculations********************/
-            //X: -P1 -2P4 -P7 + P3 + 2P6 + P9
-            //|-(p1 + p7) + (p3 + p9) + (2P6 - 2P4)|
-            gx_holder_vect = vabsq_s16(
-                    vaddq_u16(vsubq_u16(vshll_n_u8(p6,1), vshll_n_u8(p4,1))//2P6 - 2P4
-                    ,vsubq_u16(vaddl_u8(p3, p9)//p3 + p9
-                                ,vaddl_u8(p1, p7))));//p1 + p7
-            /***************************************************/
-
-            /*****************gy calculations********************/
-            //Y: P1 - P7 + 2P2 - 2P8 + P3 -P9
-            //|(P1 + P3) - (P7 + P9) + (2P2 - 2P8)|
-            gy_holder_vect = vabsq_s16(
-                            vaddq_u16(vsubq_u16(vaddl_s8(p1,p3), //P1 + P3
-                                                vaddl_s8(p7,p9)), //P7 + P9
-                                                vsubq_u16(vshll_n_u8(p2,1),vshll_n_u8(p8,1)))); //2P2 - 2P8
+        //     /*****************gy calculations********************/
+        //     //Y: P1 - P7 + 2P2 - 2P8 + P3 -P9
+        //     //|(P1 + P3) - (P7 + P9) + (2P2 - 2P8)|
+        //     gy_holder_vect = vabsq_s16(
+        //                     vaddq_u16(vsubq_u16(vaddl_s8(p1,p3), //P1 + P3
+        //                                         vaddl_s8(p7,p9)), //P7 + P9
+        //                                         vsubq_u16(vshll_n_u8(p2,1),vshll_n_u8(p8,1)))); //2P2 - 2P8
             
-            /***************************************************/
-            //add gx and gy
-            sobel_vect = vaddq_s16(gx_holder_vect, gy_holder_vect);
-            //get the min between G and the 255 vector
-            sobel_vect = vminq_u16(sobel_vect, min_comp_vect);
+        //     /***************************************************/
+        //     //add gx and gy
+        //     sobel_vect = vaddq_s16(gx_holder_vect, gy_holder_vect);
+        //     //get the min between G and the 255 vector
+        //     sobel_vect = vminq_u16(sobel_vect, min_comp_vect);
 
-            //narrow vector to 8 bits and store the values in memory
-            vst1_u8(filter_data, vmovn_u16(sobel_vect));
-        }
+        //     //narrow vector to 8 bits and store the values in memory
+        //     vst1_u8(filter_data, vmovn_u16(sobel_vect));
+        // }
         
         //wait for all threads to finish processing the filtered image
         pthread_barrier_wait(&sobel_barrier);
