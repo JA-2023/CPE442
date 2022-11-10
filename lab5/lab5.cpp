@@ -14,10 +14,6 @@
 #include <arm_neon.h>
 #include <iostream>
 #include <unistd.h>
-//number of channels for RGB
-#define     RGB     3
-//number of channels for grayscale
-#define     GRAY    1
 
 using namespace cv;
 using namespace std;
@@ -86,10 +82,11 @@ int main(int argc, char* argv[])
     Mat filtered_frame(vid_frame.rows,vid_frame.cols,CV_8UC1);
     Mat gray_frame(vid_frame.rows,vid_frame.cols,CV_8UC1);
 
+    //get a quarter of all of the pixels
     int data_chunk = ((vid_frame.rows*vid_frame.cols)/4);
 
     //initialize arguments for the threads
-    //devide stops by 8 to account for vectors
+    //devide values by 8 to account for vector operations
     argument[0] = {.start_gray = 0,
                     .stop_gray = data_chunk/8,
                     .start_sobel = vid_frame.cols,
@@ -98,25 +95,25 @@ int main(int argc, char* argv[])
                     .gray = gray_frame,
                     .sobel =  filtered_frame};
 
-    argument[1] = {.start_gray = data_chunk/8,
+    argument[1] = {.start_gray = data_chunk/8 - vid_frame.cols,
                     .stop_gray = data_chunk/4,
-                    .start_sobel = data_chunk/8,
+                    .start_sobel = data_chunk/8 - vid_frame.cols,
                     .stop_sobel = data_chunk/4,
                     .frame = vid_frame,
                     .gray = gray_frame,
                     .sobel =  filtered_frame};
 
-    argument[2] = {.start_gray = data_chunk/4,
+    argument[2] = {.start_gray = data_chunk/4 - vid_frame.cols,
                     .stop_gray = (data_chunk*3)/32,
-                    .start_sobel = data_chunk/4,
+                    .start_sobel = data_chunk/4 - vid_frame.cols,
                     .stop_sobel = (data_chunk*3)/32,
                     .frame = vid_frame,
                     .gray = gray_frame,
                     .sobel =  filtered_frame};
 
-    argument[3] = {.start_gray = (data_chunk*3)/32,
+    argument[3] = {.start_gray = (data_chunk*3)/32 - vid_frame.cols,
                     .stop_gray = data_chunk/2,
-                    .start_sobel = (data_chunk*3)/32,
+                    .start_sobel = (data_chunk*3)/32 - vid_frame.cols,
                     .stop_sobel = data_chunk/2 - vid_frame.cols,
                     .frame = vid_frame,
                     .gray = gray_frame,
@@ -232,6 +229,7 @@ void *thread_filter(void *args)
     {
 
         //for loop
+        pixel = start_gray;
         for(int i = start_gray; i < stop_gray; i++, pixel += 8 * 3, gray_data += 8)
         {
             //takes the RGB data and breaks in into 3 8x8 vectors each having one color
@@ -253,7 +251,7 @@ void *thread_filter(void *args)
 
         for(int i = start_sobel; i < stop_sobel; i++, gray_data += 8, filter_data += 8)
         {
-            //load the first 3 elements for sobel calculations and put them in vectors
+            //load the kernal elements for sobel calculations and put them in vectors
             p1 = vld1_u8(gray_data);
             p2 = vld1_u8(gray_data + 1);
             p3 = vld1_u8(gray_data + 2);
