@@ -109,7 +109,7 @@ Mat to442_sobel(Mat &gray)
     // uint8x8x3_t sobel_row1; 
     // uint8x8x3_t sobel_row2; 
     // uint8x8x3_t sobel_row3; 
-    uint8x8_t p1,p2,p3,p4,p6,p7,p8,p9
+    uint8x8_t p1,p2,p3,p4,p6,p7,p8,p9;
     int16x8_t gx_holder_vect;
     int16x8_t gy_holder_vect;
     uint16x8_t min_comp_vect = vdupq_n_u16(255);
@@ -127,8 +127,8 @@ Mat to442_sobel(Mat &gray)
         p4 = vld1_u8(gray_data + gray.cols);
         p6 = vld1_u8(gray_data + gray.cols + 2);
         p7 = vld1_u8(gray_data + 2*gray.cols);
-        p8 = vld1_u8(gray_data + 2*gray.cols);
-        p9 = vld1_u8(gray_data + 2*gray.cols);
+        p8 = vld1_u8(gray_data + 2*gray.cols + 1);
+        p9 = vld1_u8(gray_data + 2*gray.cols + 2);
         // sobel_row1 = vld3_u8(gray_data); // p1,p2,p3 but as vectors
         // sobel_row2 = vld3_u8(gray_data + gray.cols); // p4,p5,p6 in vectors. don't use the p5 vector so it is a bit wasteful but more convienent
         // sobel_row3 = vld3_u8(gray_data + gray.cols * 2); // p7,p8,p9
