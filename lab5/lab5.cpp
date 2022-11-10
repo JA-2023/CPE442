@@ -270,11 +270,11 @@ void *thread_filter(void *args)
         p1 = vld1_u8(gray_data);
         p2 = vld1_u8(gray_data + 1);
         p3 = vld1_u8(gray_data + 2);
-        p4 = vld1_u8(gray_data + gray.cols);
-        p6 = vld1_u8(gray_data + gray.cols + 2);
-        p7 = vld1_u8(gray_data + 2*gray.cols);
-        p8 = vld1_u8(gray_data + 2*gray.cols + 1);
-        p9 = vld1_u8(gray_data + 2*gray.cols + 2);
+        p4 = vld1_u8(gray_data + graycale.cols);
+        p6 = vld1_u8(gray_data + graycale.cols + 2);
+        p7 = vld1_u8(gray_data + 2*graycale.cols);
+        p8 = vld1_u8(gray_data + 2*graycale.cols + 1);
+        p9 = vld1_u8(gray_data + 2*graycale.cols + 2);
 
 
         //multiply and add correct kernal values
