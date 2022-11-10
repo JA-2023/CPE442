@@ -255,14 +255,7 @@ void *thread_filter(void *args)
     //truncate these to 255 if needed
     //store these values in the sobel filter
 
-    //make vectors for kernal values that are not 1 or 0
-    int8x8_t neg1_vect = vdup_n_s8(-1);
-    int8x8_t neg2_vect = vdup_n_s8(-2);
-    int8x8_t two_vect = vdup_n_s8(2);
-    uint8x8x3_t sobel_row1; 
-    uint8x8x3_t sobel_row2; 
-    uint8x8x3_t sobel_row3; 
-
+    uint8x8_t p1,p2,p3,p4,p6,p7,p8,p9;
     int16x8_t gx_holder_vect;
     int16x8_t gy_holder_vect;
     uint16x8_t min_comp_vect = vdupq_n_u16(255);
@@ -274,43 +267,34 @@ void *thread_filter(void *args)
     for(int i = start; i < pixel_num; i++, gray_data += 8, filter_data += 8)
     {
         //load the first 3 elements for sobel calculations and put them in vectors
-        //TODO: need to get row offsets?
-        sobel_row1 = vld3_u8(gray_data); // p1,p2,p3 but as vectors
-        sobel_row2 = vld3_u8(gray_data); // p4,p5,p6 in vectors. don't use the p5 vector so it is a bit wasteful but more convienent
-        sobel_row3 = vld3_u8(gray_data); // p7,p8,p9
+        p1 = vld1_u8(gray_data);
+        p2 = vld1_u8(gray_data + 1);
+        p3 = vld1_u8(gray_data + 2);
+        p4 = vld1_u8(gray_data + gray.cols);
+        p6 = vld1_u8(gray_data + gray.cols + 2);
+        p7 = vld1_u8(gray_data + 2*gray.cols);
+        p8 = vld1_u8(gray_data + 2*gray.cols + 1);
+        p9 = vld1_u8(gray_data + 2*gray.cols + 2);
 
 
         //multiply and add correct kernal values
         /*****************gx calculations********************/
-        //add p9 and p3 together and store in holder
-        gx_holder_vect = vaddl_s8(sobel_row1.val[2], sobel_row3.val[2]);
-        //multiple p1 vect by -1
-        gx_holder_vect = vmlal_s8(gx_holder_vect, sobel_row1.val[0], neg1_vect);
-        //multiply p4 by -2 and add
-        gx_holder_vect = vmlal_s8(gx_holder_vect, sobel_row2.val[0], neg2_vect);
-        //multiply p6 by 2 and add
-        gx_holder_vect = vmlal_s8(gx_holder_vect, sobel_row2.val[1], two_vect);
-        //multiply p7 by -1 and add
-        gx_holder_vect = vmlal_s8(gx_holder_vect, sobel_row3.val[0], neg1_vect);
-
-        //get the absolute value of the vector 
-        gx_holder_vect = vabsq_s16(gx_holder_vect);
+        //X: -P1 -2P4 -P7 + P3 + 2P6 + P9
+        //|-(p1 + p7) + (p3 + p9) + (2P6 - 2P4)|
+        gx_holder_vect = vabsq_s16(
+                  vaddq_u16(vsubq_u16(vshll_n_u8(p6,1), vshll_n_u8(p4,1))//2P6 - 2P4
+                 ,vsubq_u16(vaddl_u8(p3, p9)//p3 + p9
+                            ,vaddl_u8(p1, p7))));//p1 + p7
         /***************************************************/
 
         /*****************gy calculations********************/
-        //add p3 and p1 together and store in hold
-        gy_holder_vect = vaddl_s8(sobel_row1.val[0], sobel_row1.val[2]);
-        //multiply p2 by 2 and add
-        gy_holder_vect = vmlal_s8(gy_holder_vect, sobel_row1.val[1], two_vect);
-        //multiply p7 by -1 and add
-        gy_holder_vect = vmlal_s8(gy_holder_vect, sobel_row3.val[0], neg1_vect);
-        //multiply p8 by -2 and add
-        gy_holder_vect = vmlal_s8(gy_holder_vect, sobel_row3.val[1], neg2_vect);
-        //multply p9 by -1 and add
-        gy_holder_vect = vmlal_s8(gy_holder_vect, sobel_row3.val[2], neg1_vect);
-
-        //get the absolute value of the vector
-        gy_holder_vect = vabsq_s16(gy_holder_vect);
+        //Y: P1 - P7 + 2P2 - 2P8 + P3 -P9
+        //|(P1 + P3) - (P7 + P9) + (2P2 - 2P8)|
+        gy_holder_vect = vabsq_s16(
+                         vaddq_u16(vsubq_u16(vaddl_s8(p1,p3), //P1 + P3
+                                             vaddl_s8(p7,p9)), //P7 + P9
+                                             vsubq_u16(vshll_n_u8(p2,1),vshll_n_u8(p8,1)))); //2P2 - 2P8
+        
         /***************************************************/
         //add gx and gy
         sobel_vect = vaddq_s16(gx_holder_vect, gy_holder_vect);
