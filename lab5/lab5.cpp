@@ -89,34 +89,35 @@ int main(int argc, char* argv[])
     int data_chunk = ((vid_frame.rows*vid_frame.cols)/4);
 
     //initialize arguments for the threads
+    //devide stops by 8 to account for vectors
     argument[0] = {.start_gray = 0,
-                    .stop_gray = data_chunk,
+                    .stop_gray = data_chunk/8,
                     .start_sobel = vid_frame.cols,
-                    .stop_sobel = data_chunk,
+                    .stop_sobel = data_chunk/8,
                     .frame = vid_frame,
                     .gray = gray_frame,
                     .sobel =  filtered_frame};
 
-    argument[1] = {.start_gray = data_chunk - vid_frame.cols,
-                    .stop_gray = data_chunk*2,
-                    .start_sobel = data_chunk - vid_frame.cols,
-                    .stop_sobel = data_chunk*2,
+    argument[1] = {.start_gray = data_chunk/8 - vid_frame.cols,
+                    .stop_gray = data_chunk/4,
+                    .start_sobel = data_chunk/8 - vid_frame.cols,
+                    .stop_sobel = data_chunk/4,
                     .frame = vid_frame,
                     .gray = gray_frame,
                     .sobel =  filtered_frame};
 
-    argument[2] = {.start_gray = data_chunk*2 - vid_frame.cols,
-                    .stop_gray = (data_chunk*3)/4,
-                    .start_sobel = data_chunk*2 - vid_frame.cols,
-                    .stop_sobel = (data_chunk*3)/4,
+    argument[2] = {.start_gray = data_chunk/4 - vid_frame.cols,
+                    .stop_gray = (data_chunk*3)/32,
+                    .start_sobel = data_chunk/4 - vid_frame.cols,
+                    .stop_sobel = (data_chunk*3)/32,
                     .frame = vid_frame,
                     .gray = gray_frame,
                     .sobel =  filtered_frame};
 
-    argument[3] = {.start_gray = (data_chunk*3)/4 - vid_frame.cols,
-                    .stop_gray = data_chunk*4,
-                    .start_sobel = (data_chunk*3)/4 - vid_frame.cols,
-                    .stop_sobel = data_chunk*4 - vid_frame.cols,
+    argument[3] = {.start_gray = (data_chunk*3)/32 - vid_frame.cols,
+                    .stop_gray = data_chunk/2,
+                    .start_sobel = (data_chunk*3)/32 - vid_frame.cols,
+                    .stop_sobel = data_chunk/2 - vid_frame.cols,
                     .frame = vid_frame,
                     .gray = gray_frame,
                     .sobel =  filtered_frame};
@@ -186,8 +187,10 @@ void *thread_filter(void *args)
 
     //get arguments and cast them
     thread_args *arguments = (thread_args*)(args);
-    int start = arguments->start;
-    int stop = arguments->stop;
+    int start_gray = arguments->start_gray;
+    int stop_gray = arguments->stop_gray;
+    int start_sobel = arguments->start_sobel;
+    int stop_sobel = arguments->stop_sobel;
     Mat frame = arguments->frame;
     Mat graycale = arguments->gray;
     Mat filter_frame = arguments->sobel;
@@ -215,12 +218,21 @@ void *thread_filter(void *args)
     //vector to hold the result of the gray pixel calculations
     uint8x8_t gray_vect;
 
+    //vectors to hold kernal pixels
+    uint8x8_t p1,p2,p3,p4,p6,p7,p8,p9;
+    //vectors for intermidiate calculations
+    int16x8_t gx_holder_vect;
+    int16x8_t gy_holder_vect;
+    //full vector truncating values to 255
+    uint16x8_t min_comp_vect = vdupq_n_u16(255);
+    //final vector to be stored for sobel
+    uint16x8_t sobel_vect;
+
     while(!trim_threads)
     {
-        int pixel_num = stop/8;
 
         //for loop
-        for(int i = start; i < pixel_num; i++, pixel += 8 * 3, gray_data += 8)
+        for(int i = start_gray; i < stop_gray; i++, pixel += 8 * 3, gray_data += 8)
         {
             //takes the RGB data and breaks in into 3 8x8 vectors each having one color
             colors = vld3_u8(pixel); //TODO: might need to change this to include an offset pixel + start?
@@ -238,15 +250,8 @@ void *thread_filter(void *args)
             //store the values in the gray vector in the gray picture mat
             vst1_u8(gray_data, gray_vect);
         }
-            
 
-        uint8x8_t p1,p2,p3,p4,p6,p7,p8,p9;
-        int16x8_t gx_holder_vect;
-        int16x8_t gy_holder_vect;
-        uint16x8_t min_comp_vect = vdupq_n_u16(255);
-        uint16x8_t sobel_vect;
-
-        for(int i = start; i < pixel_num; i++, gray_data += 8, filter_data += 8)
+        for(int i = start_sobel; i < stop_sobel; i++, gray_data += 8, filter_data += 8)
         {
             //load the first 3 elements for sobel calculations and put them in vectors
             p1 = vld1_u8(gray_data);
