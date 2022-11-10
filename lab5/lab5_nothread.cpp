@@ -122,8 +122,8 @@ Mat to442_sobel(Mat &gray)
         //load the first 3 elements for sobel calculations and put them in vectors
         //TODO: need to get row offsets?
         sobel_row1 = vld3_u8(gray_data); // p1,p2,p3 but as vectors
-        sobel_row2 = vld3_u8(gray_data); // p4,p5,p6 in vectors. don't use the p5 vector so it is a bit wasteful but more convienent
-        sobel_row3 = vld3_u8(gray_data); // p7,p8,p9
+        sobel_row2 = vld3_u8(gray_data + gray.cols); // p4,p5,p6 in vectors. don't use the p5 vector so it is a bit wasteful but more convienent
+        sobel_row3 = vld3_u8(gray_data + gray.cols * 2); // p7,p8,p9
 
 
         //multiply and add correct kernal values
@@ -186,9 +186,9 @@ int main(int argc, char* argv[])
         //apply sobel filter to the frame
         Mat sobel = to442_sobel(grayscale);
         
-        //resize image to fit on 1920x1080 screen
-        namedWindow("vid_frame", WINDOW_NORMAL);
-        resizeWindow("vid_frame", 1920, 1080);
+        // //resize image to fit on 1920x1080 screen
+        // namedWindow("vid_frame", WINDOW_NORMAL);
+        // resizeWindow("vid_frame", 1920, 1080);
 
         //display the frame
         imshow("Frame", sobel);
