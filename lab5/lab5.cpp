@@ -25,8 +25,10 @@ using namespace std;
 //struct to hold all of the variables for thread arguments
 typedef struct thread_args
 {
-    int start;
-    int stop;
+    int start_gray;
+    int stop_gray;
+    int start_sobel;
+    int stop_sobel;
     Mat frame;
     Mat gray;
     Mat sobel;
@@ -87,26 +89,34 @@ int main(int argc, char* argv[])
     int data_chunk = ((vid_frame.rows*vid_frame.cols)/4);
 
     //initialize arguments for the threads
-    argument[0] = {.start = 0,
-                    .stop = data_chunk,
+    argument[0] = {.start_gray = 0,
+                    .stop_gray = data_chunk,
+                    .start_sobel = vid_frame.cols,
+                    .stop_sobel = data_chunk,
                     .frame = vid_frame,
                     .gray = gray_frame,
                     .sobel =  filtered_frame};
 
-    argument[1] = {.start = data_chunk,
-                    .stop = data_chunk * 2,
+    argument[1] = {.start_gray = data_chunk - vid_frame.cols,
+                    .stop_gray = data_chunk*2,
+                    .start_sobel = data_chunk - vid_frame.cols,
+                    .stop_sobel = data_chunk*2,
                     .frame = vid_frame,
                     .gray = gray_frame,
                     .sobel =  filtered_frame};
 
-    argument[2] = {.start = data_chunk * 2,
-                    .stop = data_chunk * 3,
+    argument[2] = {.start_gray = data_chunk*2 - vid_frame.cols,
+                    .stop_gray = (data_chunk*3)/4,
+                    .start_sobel = data_chunk*2 - vid_frame.cols,
+                    .stop_sobel = (data_chunk*3)/4,
                     .frame = vid_frame,
                     .gray = gray_frame,
                     .sobel =  filtered_frame};
 
-    argument[3] = {.start = data_chunk * 3,
-                    .stop = data_chunk * 4,
+    argument[3] = {.start_gray = (data_chunk*3)/4 - vid_frame.cols,
+                    .stop_gray = data_chunk*4,
+                    .start_sobel = (data_chunk*3)/4 - vid_frame.cols,
+                    .stop_sobel = data_chunk*4 - vid_frame.cols,
                     .frame = vid_frame,
                     .gray = gray_frame,
                     .sobel =  filtered_frame};
@@ -207,7 +217,7 @@ void *thread_filter(void *args)
 
     while(!trim_threads)
     {
-        int pixel_num = stop/8 - 1;
+        int pixel_num = stop/8;
 
         //for loop
         for(int i = start; i < pixel_num; i++, pixel += 8 * 3, gray_data += 8)
