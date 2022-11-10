@@ -21,10 +21,10 @@ using namespace std;
 //struct to hold all of the variables for thread arguments
 typedef struct thread_args
 {
-    int start_gray{};
-    int stop_gray{};
-    int start_sobel{};
-    int stop_sobel{};
+    int start_gray;
+    int stop_gray;
+    int start_sobel;
+    int stop_sobel;
     Mat frame;
     Mat gray;
     Mat sobel;
@@ -248,7 +248,8 @@ void *thread_filter(void *args)
             vst1_u8(gray_data, gray_vect);
         }
         //reset gray pointer so sobel works
-        gray_data = arguments->gray.data
+        gray_data = arguments->gray.data;
+        
         for(int i = start_sobel; i < stop_sobel; i++, gray_data += 8, sobel_data += 8)
         {
             //load the kernal elements for sobel calculations and put them in vectors
