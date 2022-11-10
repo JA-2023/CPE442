@@ -21,10 +21,10 @@ using namespace std;
 //struct to hold all of the variables for thread arguments
 typedef struct thread_args
 {
-    int start_gray;
-    int stop_gray;
-    int start_sobel;
-    int stop_sobel;
+    int start_gray{};
+    int stop_gray{};
+    int start_sobel{};
+    int stop_sobel{};
     Mat frame;
     Mat gray;
     Mat sobel;
@@ -79,7 +79,7 @@ int main(int argc, char* argv[])
     video >> vid_frame;
 
     //make frame to hold the grayscale and filtered image
-    Mat filtered_frame(vid_frame.rows,vid_frame.cols,CV_8UC1);
+    Mat filtered_frame(vid_frame.rows - 2,vid_frame.cols - 2,CV_8UC1);
     Mat gray_frame(vid_frame.rows,vid_frame.cols,CV_8UC1);
 
     //get a quarter of all of the pixels
@@ -147,7 +147,7 @@ int main(int argc, char* argv[])
         imshow("vid_frame", gray_frame);
 
         //press the escape key to close the player
-        char c = (char)waitKey(25);
+        char c = (char)waitKey(5);
         if(c==27)
             break;
         //wait for image to be shown and get a new frame
@@ -188,14 +188,11 @@ void *thread_filter(void *args)
     int stop_gray = arguments->stop_gray;
     int start_sobel = arguments->start_sobel;
     int stop_sobel = arguments->stop_sobel;
-    Mat frame = arguments->frame;
-    Mat graycale = arguments->gray;
-    Mat filter_frame = arguments->sobel;
 
     //create pointers to the picture data
-    uchar *pixel = (uchar*) frame.data;
-    uchar *gray_data = (uchar*) graycale.data;
-    uchar *filter_data = (uchar*) filter_frame.data;
+    uchar *pixel = (uchar*) arguments->frame.data;
+    uchar *gray_data = (uchar*) arguments->gray.data;
+    uchar *sobel_data = (uchar*) arguments->sobel.data;
 
     //make variable to hold all of the RGB values from the data.
     uint8x8x3_t colors; 
@@ -227,7 +224,10 @@ void *thread_filter(void *args)
 
     while(!trim_threads)
     {
-
+        //move the pointer to the correct starting position
+        pixel = arguments->frame.data + (start_gray *3*8); //multiply by 3 for RGB and 8 for the vectors
+        gray_data = arguments->gray.data + (start_gray * 8); //increment by 8 for the vectors
+    
         //for loop
         for(int i = start_gray; i < stop_gray; i++, pixel += 8 * 3, gray_data += 8)
         {
@@ -235,11 +235,11 @@ void *thread_filter(void *args)
             colors = vld3_u8(pixel); //TODO: might need to change this to include an offset pixel + start?
             //multiply each vector lane by one of the constants
             //multiples the red pixels by the red number then stores them in the holder vector
-            holder_vect = vmull_u8(colors.val[0], r_num);
+            holder_vect = vmull_u8(colors.val[2], r_num);
             //multiplies the green pixels by the number then adds it to the values in the  holder vector
             holder_vect = vmlal_u8(holder_vect, colors.val[1], g_num);
             //multiples the blue pixels by the blue number then adds it to the values in the holder vector
-            holder_vect = vmlal_u8(holder_vect, colors.val[2], b_num);
+            holder_vect = vmlal_u8(holder_vect, colors.val[0], b_num);
 
             //bit shift the values from the holder vector to narrow them down from 16 to 8 bits
             gray_vect = vshrn_n_u16(holder_vect, 8);
@@ -247,18 +247,19 @@ void *thread_filter(void *args)
             //store the values in the gray vector in the gray picture mat
             vst1_u8(gray_data, gray_vect);
         }
-
-        for(int i = start_sobel; i < stop_sobel; i++, gray_data += 8, filter_data += 8)
+        //reset gray pointer so sobel works
+        gray_data = arguments->gray.data
+        for(int i = start_sobel; i < stop_sobel; i++, gray_data += 8, sobel_data += 8)
         {
             //load the kernal elements for sobel calculations and put them in vectors
             p1 = vld1_u8(gray_data);
             p2 = vld1_u8(gray_data + 1);
             p3 = vld1_u8(gray_data + 2);
-            p4 = vld1_u8(gray_data + graycale.cols);
-            p6 = vld1_u8(gray_data + graycale.cols + 2);
-            p7 = vld1_u8(gray_data + 2*graycale.cols);
-            p8 = vld1_u8(gray_data + 2*graycale.cols + 1);
-            p9 = vld1_u8(gray_data + 2*graycale.cols + 2);
+            p4 = vld1_u8(gray_data + arguments->gray.cols);
+            p6 = vld1_u8(gray_data + arguments->gray.cols + 2);
+            p7 = vld1_u8(gray_data + 2*arguments->gray.cols);
+            p8 = vld1_u8(gray_data + 2*arguments->gray.cols + 1);
+            p9 = vld1_u8(gray_data + 2*arguments->gray.cols + 2);
 
 
             //multiply and add correct kernal values
@@ -266,8 +267,8 @@ void *thread_filter(void *args)
             //X: -P1 -2P4 -P7 + P3 + 2P6 + P9
             //|-(p1 + p7) + (p3 + p9) + (2P6 - 2P4)|
             gx_holder_vect = vabsq_s16(
-                    vaddq_u16(vsubq_u16(vshll_n_u8(p6,1), vshll_n_u8(p4,1))//2P6 - 2P4
-                             ,vsubq_u16(vaddl_u8(p3, p9)//p3 + p9
+                    vaddq_s16(vsubq_s16(vshll_n_s8(p6,1), vshll_n_u8(p4,1))//2P6 - 2P4
+                             ,vsubq_s16(vaddl_u8(p3, p9)//p3 + p9
                                        ,vaddl_u8(p1, p7))));//p1 + p7
             /***************************************************/
 
@@ -275,18 +276,18 @@ void *thread_filter(void *args)
             //Y: P1 - P7 + 2P2 - 2P8 + P3 -P9
             //|(P1 + P3) - (P7 + P9) + (2P2 - 2P8)|
             gy_holder_vect = vabsq_s16(
-                            vaddq_u16(vsubq_u16(vaddl_s8(p1,p3), //P1 + P3
+                            vaddq_s16(vsubq_s16(vaddl_s8(p1,p3), //P1 + P3
                                                 vaddl_s8(p7,p9)), //P7 + P9
-                                                vsubq_u16(vshll_n_u8(p2,1),vshll_n_u8(p8,1)))); //2P2 - 2P8
+                                                vsubq_s16(vshll_n_u8(p2,1),vshll_n_u8(p8,1)))); //2P2 - 2P8
             
             /***************************************************/
             //add gx and gy
-            sobel_vect = vaddq_s16(gx_holder_vect, gy_holder_vect);
+            sobel_vect = vaddq_u16(gx_holder_vect, gy_holder_vect);
             //get the min between G and the 255 vector
             sobel_vect = vminq_u16(sobel_vect, min_comp_vect);
 
             //narrow vector to 8 bits and store the values in memory
-            vst1_u8(filter_data, vmovn_u16(sobel_vect));
+            vst1_u8(sobel_data, vmovn_u16(sobel_vect));
         }
         
         //wait for all threads to finish processing the filtered image
@@ -294,5 +295,5 @@ void *thread_filter(void *args)
         //wait until a new frame has been aquired
         pthread_barrier_wait(&display_barrier);
     }
-    return NULL;   
+    return nullptr;   
 }
