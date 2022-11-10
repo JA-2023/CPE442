@@ -98,25 +98,25 @@ int main(int argc, char* argv[])
                     .gray = gray_frame,
                     .sobel =  filtered_frame};
 
-    argument[1] = {.start_gray = data_chunk/8 - vid_frame.cols,
+    argument[1] = {.start_gray = data_chunk/8,
                     .stop_gray = data_chunk/4,
-                    .start_sobel = data_chunk/8 - vid_frame.cols,
+                    .start_sobel = data_chunk/8,
                     .stop_sobel = data_chunk/4,
                     .frame = vid_frame,
                     .gray = gray_frame,
                     .sobel =  filtered_frame};
 
-    argument[2] = {.start_gray = data_chunk/4 - vid_frame.cols,
+    argument[2] = {.start_gray = data_chunk/4,
                     .stop_gray = (data_chunk*3)/32,
-                    .start_sobel = data_chunk/4 - vid_frame.cols,
+                    .start_sobel = data_chunk/4,
                     .stop_sobel = (data_chunk*3)/32,
                     .frame = vid_frame,
                     .gray = gray_frame,
                     .sobel =  filtered_frame};
 
-    argument[3] = {.start_gray = (data_chunk*3)/32 - vid_frame.cols,
+    argument[3] = {.start_gray = (data_chunk*3)/32,
                     .stop_gray = data_chunk/2,
-                    .start_sobel = (data_chunk*3)/32 - vid_frame.cols,
+                    .start_sobel = (data_chunk*3)/32,
                     .stop_sobel = data_chunk/2 - vid_frame.cols,
                     .frame = vid_frame,
                     .gray = gray_frame,
@@ -270,8 +270,8 @@ void *thread_filter(void *args)
             //|-(p1 + p7) + (p3 + p9) + (2P6 - 2P4)|
             gx_holder_vect = vabsq_s16(
                     vaddq_u16(vsubq_u16(vshll_n_u8(p6,1), vshll_n_u8(p4,1))//2P6 - 2P4
-                    ,vsubq_u16(vaddl_u8(p3, p9)//p3 + p9
-                                ,vaddl_u8(p1, p7))));//p1 + p7
+                             ,vsubq_u16(vaddl_u8(p3, p9)//p3 + p9
+                                       ,vaddl_u8(p1, p7))));//p1 + p7
             /***************************************************/
 
             /*****************gy calculations********************/
