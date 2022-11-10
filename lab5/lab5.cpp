@@ -229,7 +229,6 @@ void *thread_filter(void *args)
     {
 
         //for loop
-        pixel = start_gray;
         for(int i = start_gray; i < stop_gray; i++, pixel += 8 * 3, gray_data += 8)
         {
             //takes the RGB data and breaks in into 3 8x8 vectors each having one color
