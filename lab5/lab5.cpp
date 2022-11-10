@@ -74,7 +74,7 @@ int main(int argc, char* argv[])
     //VideoCapture video(*final);
 
     // VideoCapture video("/home/josh/Desktop/School/CPE442/lab5/vid");
-    VideoCapture video("/home/CPE/Desktop/CPE442/lab5/vid.mp4");
+    VideoCapture video("/home/CPE/Desktop/CPE442/lab5/vid1.mp4");
     //make Mat to hold each frame
     Mat vid_frame;
     //put the captured frame in the frame object
@@ -136,7 +136,7 @@ int main(int argc, char* argv[])
         resizeWindow("vid_frame", 1920, 1080);
         
         //display the frame
-        imshow("vid_frame", filtered_frame);
+        imshow("vid_frame", gray_frame);
 
         //press the escape key to close the player
         char c = (char)waitKey(25);
