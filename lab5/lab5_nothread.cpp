@@ -115,9 +115,10 @@ Mat to442_sobel(Mat &gray)
     uint16x8_t min_comp_vect = vdupq_n_u16(255);
     uint16x8_t sobel_vect;
 
-    int pixel_num = (gray.rows * gray.cols)/8;
-    //TODO: check to see if I need to change this from pix num to something else
-    for(int i = 0; i < pixel_num; i++, gray_data += 8, filter_data += 8)
+    //get the number of pixels minus the last row
+    int pixel_num = ((gray.rows * gray.cols) - gray.cols)/8;
+    //start on the second row and calculate sobel data
+    for(int i = gray.cols; i < pixel_num; i++, gray_data += 8, filter_data += 8)
     {
         //load the first 3 elements for sobel calculations and put them in vectors
         //TODO: need to get row offsets?
