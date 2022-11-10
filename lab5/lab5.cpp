@@ -227,6 +227,7 @@ void *thread_filter(void *args)
         //move the pointer to the correct starting position
         pixel = arguments->frame.data + (start_gray *3*8); //multiply by 3 for RGB and 8 for the vectors
         gray_data = arguments->gray.data + (start_gray * 8); //increment by 8 for the vectors
+        sobel_data = arguments->sobel.data;
     
         //for loop
         for(int i = start_gray; i < stop_gray; i++, pixel += 8 * 3, gray_data += 8)
@@ -249,7 +250,7 @@ void *thread_filter(void *args)
         }
         //reset gray pointer so sobel works
         gray_data = arguments->gray.data;
-        
+
         for(int i = start_sobel; i < stop_sobel; i++, gray_data += 8, sobel_data += 8)
         {
             //load the kernal elements for sobel calculations and put them in vectors
