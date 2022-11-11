@@ -1,7 +1,7 @@
 /*********************************************************
-* File: lab4.cpp
+* File: lab5.cpp
 *
-* Description: program takes a video and puts it through a sobel filter using threads
+* Description: program takes a video and puts it through a sobel filter using threads and vectors
 *
 * Author: Joshua Alderson
 * 
@@ -56,66 +56,63 @@ int main(int argc, char* argv[])
     pthread_barrier_init(&display_barrier, NULL, 5);
 
 
-    // //char array to hold the file name
-    // char file[20];
-    // //put command line argument in variable
-    // strcat(file,argv[1]);
-    // //get file path for the image
-    // char path[100];
-    // getcwd(path, 100);
+    //char array to hold the file name
+    char file[20];
+    //put command line argument in variable
+    strcat(file,argv[1]);
+    //get file path for the image
+    char path[100];
+    getcwd(path, 100);
  
-    // //add directory and file to get full path
-    // char* final[100] = {strcat(path,"/")};
-    // strcat(*final,file);
+    //add directory and file to get full path
+    char* final[100] = {strcat(path,"/")};
+    strcat(*final,file);
     
-    //make vidocapture to get each frame form the video
-    //VideoCapture video(*final);
+    // make vidocapture to get each frame form the video
+    VideoCapture video(*final);
 
-    // VideoCapture video("/home/josh/Desktop/School/CPE442/lab5/vid");
-    VideoCapture video("/home/CPE/Desktop/CPE442/lab5/vid1.mp4");
     //make Mat to hold each frame
     Mat vid_frame;
     //put the captured frame in the frame object
     video >> vid_frame;
 
     //make frame to hold the grayscale and filtered image
-    Mat filtered_frame(vid_frame.rows,vid_frame.cols,CV_8UC1);
+    Mat filtered_frame(vid_frame.rows - 2,vid_frame.cols - 2,CV_8UC1);
     Mat gray_frame(vid_frame.rows,vid_frame.cols,CV_8UC1);
 
     //get a quarter of all of the pixels
     int data_chunk = ((vid_frame.rows*vid_frame.cols)/4);
-
+    int sobel_chunk = (((vid_frame.rows - 2) * (vid_frame.cols -2)))/4;
+    int sobel_offset = vid_frame.cols - 2;
     //initialize arguments for the threads
-    //devide values by 8 to account for vector operations
-    //TODO: don't divide by
     argument[0] = {.start_gray = 0,
                     .stop_gray = data_chunk,
-                    .start_sobel = vid_frame.cols,
-                    .stop_sobel = data_chunk,
+                    .start_sobel = sobel_offset,
+                    .stop_sobel = sobel_chunk,
                     .frame = vid_frame,
                     .gray = gray_frame,
                     .sobel =  filtered_frame};
 
     argument[1] = {.start_gray = data_chunk - vid_frame.cols,
                     .stop_gray = data_chunk*2,
-                    .start_sobel = data_chunk - vid_frame.cols,
-                    .stop_sobel = data_chunk*2,
+                    .start_sobel = sobel_chunk - sobel_offset,
+                    .stop_sobel = sobel_chunk*2,
                     .frame = vid_frame,
                     .gray = gray_frame,
                     .sobel =  filtered_frame};
 
     argument[2] = {.start_gray = data_chunk*2 - vid_frame.cols,
                     .stop_gray = data_chunk*3,
-                    .start_sobel = data_chunk*2 - vid_frame.cols,
-                    .stop_sobel = data_chunk*3,
+                    .start_sobel = sobel_chunk*2 - sobel_offset,
+                    .stop_sobel = sobel_chunk*3,
                     .frame = vid_frame,
                     .gray = gray_frame,
                     .sobel =  filtered_frame};
 
     argument[3] = {.start_gray = data_chunk*3 - vid_frame.cols,
                     .stop_gray = data_chunk*4,
-                    .start_sobel = data_chunk*3- vid_frame.cols,
-                    .stop_sobel = data_chunk*4 - vid_frame.cols,
+                    .start_sobel = sobel_chunk*3- sobel_offset,
+                    .stop_sobel = sobel_chunk*4 - sobel_offset,
                     .frame = vid_frame,
                     .gray = gray_frame,
                     .sobel =  filtered_frame};
@@ -174,7 +171,8 @@ int main(int argc, char* argv[])
 /*-----------------------------------------------------
 * Function: thread_filter
 * 
-* Description: each thread will take in the frame of a video and processing 1/4 of it applying a sobel filter
+* Description: each thread will take in the frame of a video and processing 1/4 of it applying a sobel filter.
+* Sobel calculations are done using vectors
 * 
 * param a: void pointer: start and stop values for image processing and the images to use
 * 
@@ -206,7 +204,7 @@ void *thread_filter(void *args)
     //g_num
     uint8x8_t g_num = vdup_n_u8(150); 
 
-    //variable to hole the intermidate values (16 bit values)
+    //variable to hold the intermidate values (16 bit values)
     uint16x8_t holder_vect;
 
     //vector to hold the result of the gray pixel calculations
@@ -226,14 +224,14 @@ void *thread_filter(void *args)
     {
         //move the pointer to the correct starting position
         pixel = arguments->frame.data + (start_gray *3); //multiply by 3 for RGB and 8 for the vectors
-        gray_data = arguments->gray.data + (start_gray); //increment by 8 for the vectors
+        gray_data = arguments->gray.data + (start_gray); 
         sobel_data = arguments->sobel.data + (start_sobel);
     
-        //for loop
+        //loop through data with step size of 8 for 8 bit sized vectors
         for(int i = start_gray; i < stop_gray; i+=8, pixel += 8 * 3, gray_data += 8)
         {
             //takes the RGB data and breaks in into 3 8x8 vectors each having one color
-            colors = vld3_u8(pixel); //TODO: might need to change this to include an offset pixel + start?
+            colors = vld3_u8(pixel);
             //multiply each vector lane by one of the constants
             //multiples the red pixels by the red number then stores them in the holder vector
             holder_vect = vmull_u8(colors.val[2], r_num);
@@ -249,7 +247,7 @@ void *thread_filter(void *args)
             vst1_u8(gray_data, gray_vect);
         }
 
-        //reset gray pointer so sobel works
+        //reset gray pointer so sobel values point to the correct addresses
         gray_data = arguments->gray.data + start_gray;
 
         for(int i = start_sobel; i < stop_sobel; i+=8, gray_data += 8, sobel_data += 8)
@@ -269,15 +267,17 @@ void *thread_filter(void *args)
             /*****************gx calculations********************/
             //X: -P1 -2P4 -P7 + P3 + 2P6 + P9
             //|-(p1 + p7) + (p3 + p9) + (2P6 - 2P4)|
-            // gx_holder_vect = vabsq_s16(vaddq_s16(vsubq_s16(vshll_n_s8(p6,1), vshll_n_u8(p4,1)),vsubq_s16(vaddl_u8(p3, p9),vaddl_u8(p1, p7))));//p1 + p7
-            gx_holder_vect = vabsq_s16(vaddq_s16(vsubq_s16(vaddl_u8(p3,p9),vaddl_u8(p1,p7)),vsubq_s16(vshll_n_u8(p6,1),vshll_n_u8(p4,1))));
+            gx_holder_vect = vabsq_s16(vaddq_s16( 
+                                       vsubq_s16(vaddl_u8(p3,p9),vaddl_u8(p1,p7)),//(p3 + p9) - (p1 + p7)
+                                       vsubq_s16(vshll_n_u8(p6,1),vshll_n_u8(p4,1))));//(2P6 - 2P4)
             /***************************************************/
 
             /*****************gy calculations********************/
             //Y: P1 - P7 + 2P2 - 2P8 + P3 -P9
             //|(P1 + P3) - (P7 + P9) + (2P2 - 2P8)|
-            // gy_holder_vect = vabsq_s16(vaddq_s16(vsubq_s16(vaddl_u8(p1,p3),vaddl_u8(p7,p9)),vsubq_s16(vshll_n_u8(p2,1),vshll_n_u8(p8,1)))); //2P2 - 2P8
-            gy_holder_vect = vabsq_s16(vaddq_s16(vsubq_s16(vaddl_u8(p1,p3),vaddl_u8(p7,p9)),vsubq_s16(vshll_n_u8(p2,1),vshll_n_u8(p8,1))));
+            gy_holder_vect = vabsq_s16(vaddq_s16(
+                                       vsubq_s16(vaddl_u8(p1,p3),vaddl_u8(p7,p9)), //(p1 + p3) - (p7 + p9)
+                                       vsubq_s16(vshll_n_u8(p2,1),vshll_n_u8(p8,1)))); //(2p2 - 2p8)
             /***************************************************/
             //add gx and gy
             sobel_vect = vaddq_u16(gx_holder_vect, gy_holder_vect);
