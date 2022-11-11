@@ -79,7 +79,7 @@ int main(int argc, char* argv[])
     video >> vid_frame;
 
     //make frame to hold the grayscale and filtered image
-    Mat filtered_frame(vid_frame.rows - 2,vid_frame.cols - 2,CV_8UC1);
+    Mat filtered_frame(vid_frame.rows,vid_frame.cols,CV_8UC1);
     Mat gray_frame(vid_frame.rows,vid_frame.cols,CV_8UC1);
 
     //get a quarter of all of the pixels
@@ -224,7 +224,10 @@ void *thread_filter(void *args)
 
     while(!trim_threads)
     {
-        
+        //move the pointer to the correct starting position
+        pixel = arguments->frame.data + (start_gray *3); //multiply by 3 for RGB and 8 for the vectors
+        gray_data = arguments->gray.data + (start_gray); //increment by 8 for the vectors
+        sobel_data = arguments->sobel.data + (start_sobel);
     
         //for loop
         for(int i = start_gray; i < stop_gray; i+=8, pixel += 8 * 3, gray_data += 8)
@@ -289,10 +292,7 @@ void *thread_filter(void *args)
             //narrow vector to 8 bits and store the values in memory
             vst1_u8(sobel_data, vmovn_u16(sobel_vect));
         }
-        //move the pointer to the correct starting position
-        pixel = arguments->frame.data + (start_gray *3); //multiply by 3 for RGB and 8 for the vectors
-        gray_data = arguments->gray.data + (start_gray); //increment by 8 for the vectors
-        sobel_data = arguments->sobel.data + (start_sobel);
+        
         //wait for all threads to finish processing the filtered image
         pthread_barrier_wait(&sobel_barrier);
         //wait until a new frame has been aquired
