@@ -87,34 +87,35 @@ int main(int argc, char* argv[])
 
     //initialize arguments for the threads
     //devide values by 8 to account for vector operations
+    //TODO: don't divide by
     argument[0] = {.start_gray = 0,
-                    .stop_gray = data_chunk/8,
+                    .stop_gray = data_chunk,
                     .start_sobel = vid_frame.cols,
-                    .stop_sobel = data_chunk/8,
+                    .stop_sobel = data_chunk,
                     .frame = vid_frame,
                     .gray = gray_frame,
                     .sobel =  filtered_frame};
 
-    argument[1] = {.start_gray = data_chunk/8 - vid_frame.cols,
-                    .stop_gray = data_chunk/4,
-                    .start_sobel = data_chunk/8 - vid_frame.cols,
-                    .stop_sobel = data_chunk/4,
+    argument[1] = {.start_gray = data_chunk - vid_frame.cols,
+                    .stop_gray = data_chunk*2,
+                    .start_sobel = data_chunk - vid_frame.cols,
+                    .stop_sobel = data_chunk*2,
                     .frame = vid_frame,
                     .gray = gray_frame,
                     .sobel =  filtered_frame};
 
-    argument[2] = {.start_gray = data_chunk/4 - vid_frame.cols,
-                    .stop_gray = (data_chunk*3)/32,
-                    .start_sobel = data_chunk/4 - vid_frame.cols,
-                    .stop_sobel = (data_chunk*3)/32,
+    argument[2] = {.start_gray = data_chunk*2 - vid_frame.cols,
+                    .stop_gray = data_chunk*3,
+                    .start_sobel = data_chunk*2 - vid_frame.cols,
+                    .stop_sobel = data_chunk*3,
                     .frame = vid_frame,
                     .gray = gray_frame,
                     .sobel =  filtered_frame};
 
-    argument[3] = {.start_gray = (data_chunk*3)/32 - vid_frame.cols,
-                    .stop_gray = data_chunk/2,
-                    .start_sobel = (data_chunk*3)/32 - vid_frame.cols,
-                    .stop_sobel = data_chunk/2 - vid_frame.cols,
+    argument[3] = {.start_gray = data_chunk*3 - vid_frame.cols,
+                    .stop_gray = data_chunk*4,
+                    .start_sobel = data_chunk*3- vid_frame.cols,
+                    .stop_sobel = data_chunk*4 - vid_frame.cols,
                     .frame = vid_frame,
                     .gray = gray_frame,
                     .sobel =  filtered_frame};
@@ -196,7 +197,6 @@ void *thread_filter(void *args)
 
     //make variable to hold all of the RGB values from the data.
     uint8x8x3_t colors; 
-    uint8x8_t gray_chunk;
     //make vectors that hold the constants to multiply by
     //r_num
     //fills a vector with the value listed
@@ -225,12 +225,12 @@ void *thread_filter(void *args)
     while(!trim_threads)
     {
         //move the pointer to the correct starting position
-        pixel = arguments->frame.data + (start_gray *3*8); //multiply by 3 for RGB and 8 for the vectors
-        gray_data = arguments->gray.data + (start_gray * 8); //increment by 8 for the vectors
-        sobel_data = arguments->sobel.data + (start_sobel * 8);
+        pixel = arguments->frame.data + (start_gray *3); //multiply by 3 for RGB and 8 for the vectors
+        gray_data = arguments->gray.data + (start_gray); //increment by 8 for the vectors
+        sobel_data = arguments->sobel.data + (start_sobel);
     
         //for loop
-        for(int i = start_gray; i < stop_gray; i++, pixel += 8 * 3, gray_data += 8)
+        for(int i = start_gray; i < stop_gray; i+=8, pixel += 8 * 3, gray_data += 8)
         {
             //takes the RGB data and breaks in into 3 8x8 vectors each having one color
             colors = vld3_u8(pixel); //TODO: might need to change this to include an offset pixel + start?
@@ -248,10 +248,11 @@ void *thread_filter(void *args)
             //store the values in the gray vector in the gray picture mat
             vst1_u8(gray_data, gray_vect);
         }
-        //reset gray pointer so sobel works
-        gray_data = arguments->gray.data + (start_gray * 8);
 
-        for(int i = start_sobel; i < stop_sobel; i++, gray_data += 8, sobel_data += 8)
+        //reset gray pointer so sobel works
+        gray_data = arguments->gray.data + start_gray;
+
+        for(int i = start_sobel; i < stop_sobel; i+=8, gray_data += 8, sobel_data += 8)
         {
             //load the kernal elements for sobel calculations and put them in vectors
             p1 = vld1_u8(gray_data);
