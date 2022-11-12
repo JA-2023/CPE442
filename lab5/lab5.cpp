@@ -66,7 +66,7 @@ int main(int argc, char* argv[])
  
     //add directory and file to get full path
     char* final[100] = {strcat(path,"/")};
-    strcat(*final,file);
+    strcat(*final,argv[1]);
     
     // make vidocapture to get each frame form the video
     VideoCapture video(*final);
@@ -77,42 +77,40 @@ int main(int argc, char* argv[])
     video >> vid_frame;
 
     //make frame to hold the grayscale and filtered image
-    Mat filtered_frame(vid_frame.rows - 2,vid_frame.cols - 2,CV_8UC1);
+    Mat filtered_frame(vid_frame.rows,vid_frame.cols,CV_8UC1);
     Mat gray_frame(vid_frame.rows,vid_frame.cols,CV_8UC1);
 
     //get a quarter of all of the pixels
     int data_chunk = ((vid_frame.rows*vid_frame.cols)/4);
-    int sobel_chunk = (((vid_frame.rows - 2) * (vid_frame.cols -2)))/4;
-    int sobel_offset = vid_frame.cols - 2;
     //initialize arguments for the threads
     argument[0] = {.start_gray = 0,
                     .stop_gray = data_chunk,
-                    .start_sobel = sobel_offset,
-                    .stop_sobel = sobel_chunk,
+                    .start_sobel = vid_frame.rows,
+                    .stop_sobel = data_chunk,
                     .frame = vid_frame,
                     .gray = gray_frame,
                     .sobel =  filtered_frame};
 
     argument[1] = {.start_gray = data_chunk - vid_frame.cols,
                     .stop_gray = data_chunk*2,
-                    .start_sobel = sobel_chunk - sobel_offset,
-                    .stop_sobel = sobel_chunk*2,
+                    .start_sobel = data_chunk - vid_frame.rows,
+                    .stop_sobel = data_chunk*2,
                     .frame = vid_frame,
                     .gray = gray_frame,
                     .sobel =  filtered_frame};
 
     argument[2] = {.start_gray = data_chunk*2 - vid_frame.cols,
                     .stop_gray = data_chunk*3,
-                    .start_sobel = sobel_chunk*2 - sobel_offset,
-                    .stop_sobel = sobel_chunk*3,
+                    .start_sobel = data_chunk*2 - vid_frame.rows,
+                    .stop_sobel = data_chunk*3,
                     .frame = vid_frame,
                     .gray = gray_frame,
                     .sobel =  filtered_frame};
 
     argument[3] = {.start_gray = data_chunk*3 - vid_frame.cols,
                     .stop_gray = data_chunk*4,
-                    .start_sobel = sobel_chunk*3- sobel_offset,
-                    .stop_sobel = sobel_chunk*4 - sobel_offset,
+                    .start_sobel = data_chunk*3- vid_frame.rows,
+                    .stop_sobel = data_chunk*4 - vid_frame.rows,
                     .frame = vid_frame,
                     .gray = gray_frame,
                     .sobel =  filtered_frame};
