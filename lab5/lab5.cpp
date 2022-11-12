@@ -85,7 +85,7 @@ int main(int argc, char* argv[])
     //initialize arguments for the threads
     argument[0] = {.start_gray = 0,
                     .stop_gray = data_chunk,
-                    .start_sobel = vid_frame.rows,
+                    .start_sobel = vid_frame.cols,
                     .stop_sobel = data_chunk,
                     .frame = vid_frame,
                     .gray = gray_frame,
@@ -93,7 +93,7 @@ int main(int argc, char* argv[])
 
     argument[1] = {.start_gray = data_chunk - vid_frame.cols,
                     .stop_gray = data_chunk*2,
-                    .start_sobel = data_chunk - vid_frame.rows,
+                    .start_sobel = data_chunk - vid_frame.cols,
                     .stop_sobel = data_chunk*2,
                     .frame = vid_frame,
                     .gray = gray_frame,
@@ -101,7 +101,7 @@ int main(int argc, char* argv[])
 
     argument[2] = {.start_gray = data_chunk*2 - vid_frame.cols,
                     .stop_gray = data_chunk*3,
-                    .start_sobel = data_chunk*2 - vid_frame.rows,
+                    .start_sobel = data_chunk*2 - vid_frame.cols,
                     .stop_sobel = data_chunk*3,
                     .frame = vid_frame,
                     .gray = gray_frame,
@@ -109,8 +109,8 @@ int main(int argc, char* argv[])
 
     argument[3] = {.start_gray = data_chunk*3 - vid_frame.cols,
                     .stop_gray = data_chunk*4,
-                    .start_sobel = data_chunk*3- vid_frame.rows,
-                    .stop_sobel = data_chunk*4 - vid_frame.rows,
+                    .start_sobel = data_chunk*3- vid_frame.cols,
+                    .stop_sobel = data_chunk*4 - vid_frame.cols,
                     .frame = vid_frame,
                     .gray = gray_frame,
                     .sobel =  filtered_frame};
