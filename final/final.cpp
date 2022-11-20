@@ -1,5 +1,5 @@
 /*********************************************************
-* File: lab5.cpp
+* File: final.cpp
 *
 * Description: program takes a video and puts it through a sobel filter using threads and vectors
 *
@@ -14,9 +14,12 @@
 #include <arm_neon.h>
 #include <iostream>
 #include <unistd.h>
+#include <sys/time.h>
 
 using namespace cv;
 using namespace std;
+
+struct timeval start,stop;
 
 //struct to hold all of the variables for thread arguments
 typedef struct thread_args
@@ -44,7 +47,10 @@ void *thread_filter(void *args);
 
 int main(int argc, char* argv[])
 {
-    
+    //variables for calculating the fps
+    float time_avg = 0.0;
+    int frame_counter = 0;
+
     //create thread variables
     pthread_t quadrant[4];
 
@@ -75,6 +81,9 @@ int main(int argc, char* argv[])
     Mat vid_frame;
     //put the captured frame in the frame object
     video >> vid_frame;
+    //get the time when the frame is captured
+    gettimeofday(&start, NULL);
+    frame_counter++;
 
     //make frame to hold the grayscale and filtered image
     Mat filtered_frame(vid_frame.rows,vid_frame.cols,CV_8UC1);
@@ -128,9 +137,15 @@ int main(int argc, char* argv[])
     {
         //wait for all threads and main to reach the loop
         pthread_barrier_wait(&sobel_barrier);
-
+        gettimeofday(&stop, NULL);
+        
+        //get the difference between the start and stop time for single frame in seconds
+        time_avg += 1000000 * (stop.tv_usec - start.tv_usec) + (stop.tv_usec - start.tv_usec);
         //get new frame for processing
         video >> vid_frame;
+        frame_counter++;
+        //get the time when the frame is captured
+        gettimeofday(&start, NULL);
         if(vid_frame.empty())
             break;
         
@@ -148,6 +163,8 @@ int main(int argc, char* argv[])
             break;
         //wait for image to be shown and get a new frame
         pthread_barrier_wait(&display_barrier);
+
+        cout << "FPS: " << (float)frame_counter / time_avg;
     }
 
     //turn on flag to stop thread loops
