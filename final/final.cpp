@@ -164,7 +164,7 @@ int main(int argc, char* argv[])
         //wait for image to be shown and get a new frame
         pthread_barrier_wait(&display_barrier);
 
-        cout << "FPS: " << (float)frame_counter / time_avg << endl;
+        //cout << "FPS: " << (float)frame_counter / time_avg << endl;
     }
 
     //turn on flag to stop thread loops
@@ -179,7 +179,7 @@ int main(int argc, char* argv[])
     //destroy barriers and resources they used
     pthread_barrier_destroy(&sobel_barrier);
     pthread_barrier_destroy(&display_barrier);
-
+    cout << "final avg: " << frame_counter / time_avg << endl;
     return 0;
 }
 
