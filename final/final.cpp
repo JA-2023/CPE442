@@ -219,7 +219,11 @@ void *thread_filter(void *args)
     uchar *sobel_data = (uchar*) arguments->sobel.data;
 
     //make variable to hold all of the RGB values from the data.
-    uint8x8x3_t colors; 
+    //uint8x8x3_t colors;  
+    uint8x8x3_t gray_row1;
+    uint8x8x3_t gray_row2;
+    uint8x8x3_t gray_row3;
+
     //make vectors that hold the constants to multiply by
     //r_num
     //fills a vector with the value listed
@@ -238,14 +242,10 @@ void *thread_filter(void *args)
     //vectors to hold kernal pixels
     uint8x8_t pixels[8];
     //vectors for intermidiate calculations
-    //TODO: take these out
-    // int16x8_t gx_holder_vect;
-    // int16x8_t gy_holder_vect;
-    //full vector truncating values to 255
-    //TODO: take this out
-    //uint16x8_t min_comp_vect = vdupq_n_u16(255);
+    int16x8_t gx_holder_vect;
+    int16x8_t gy_holder_vect;
     //final vector to be stored for sobel
-    //uint16x8_t sobel_vect;
+    uint16x8_t sobel_vect;
 
     while(!trim_threads)
     {
@@ -253,83 +253,74 @@ void *thread_filter(void *args)
         pixel = arguments->frame.data + (start_gray *3); //multiply by 3 for RGB and 8 for the vectors
         gray_data = arguments->gray.data + (start_gray); 
         sobel_data = arguments->sobel.data + (start_sobel);
-    
-        //loop through data with step size of 8 for 8 bit sized vectors
-        for(int i = start_gray; i < stop_gray; i+=8, pixel += 8 * 3, gray_data += 8)
-        {
-            //takes the RGB data and breaks in into 3 8x8 vectors each having one color
-            colors = vld3_u8(pixel);
-            //multiply each vector lane by one of the constants
-            //multiples the red pixels by the red number then stores them in the holder vector
-            holder_vect = vmull_u8(colors.val[2], r_num);
-            //multiplies the green pixels by the number then adds it to the values in the  holder vector
-            holder_vect = vmlal_u8(holder_vect, colors.val[1], g_num);
-            //multiples the blue pixels by the blue number then adds it to the values in the holder vector
-            holder_vect = vmlal_u8(holder_vect, colors.val[0], b_num);
 
-            //bit shift the values from the holder vector to narrow them down from 16 to 8 bits
-            gray_vect = vshrn_n_u16(holder_vect, 8);
-
-            //store the values in the gray vector in the gray picture mat
-            vst1_u8(gray_data, gray_vect);
-        }
-
-        //reset gray pointer so sobel values point to the correct addresses
-        gray_data = arguments->gray.data + start_gray;
 
         for(int i = start_sobel; i < stop_sobel; i+=8, gray_data += 8, sobel_data += 8)
         {
-            //load the kernal elements for sobel calculations and put them in vectors
-            //NOTE: the middle pixel (5) is not used so the index is pixel number - 2 after the fourth pixel
-            pixels[0] = vld1_u8(gray_data);
-            pixels[1] = vld1_u8(gray_data + 1);
-            pixels[2] = vld1_u8(gray_data + 2);
-            pixels[3] = vld1_u8(gray_data + arguments->gray.cols);
-            pixels[4] = vld1_u8(gray_data + arguments->gray.cols + 2);
-            pixels[5] = vld1_u8(gray_data + 2*arguments->gray.cols);
-            pixels[6] = vld1_u8(gray_data + 2*arguments->gray.cols + 1);
-            pixels[7] = vld1_u8(gray_data + 2*arguments->gray.cols + 2);
+
+            //calculate the gray values needed for sobel calculations
+            for(int i = 0; i < 3; i+=8, pixel += 8 * 3)
+            {
+                //calculate the first row values
+                gray_row1 = vld3_u8(pixel); //get the first row
+                holder_vect = vmull_u8(gray_row1.val[2], r_num);
+                holder_vect = vmlal_u8(holder_vect, gray_row1.val[1], g_num);
+                holder_vect = vmlal_u8(holder_vect, gray_row1.val[0], b_num);
+                pixel[i] = vshrn_n_u16(holder_vect, 8);
+
+                //calculate the second row values
+                if(i != 1) //the if statement makes it skip the middle pixel element
+                {
+                    gray_row2 = vld3_u8(pixel + arguments->sobel.cols); //get the second row
+                    holder_vect = vmull_u8(gray_row2.val[2], r_num);
+                    holder_vect = vmlal_u8(holder_vect, gray_row2.val[1], g_num);
+                    holder_vect = vmlal_u8(holder_vect, gray_row2.val[0], b_num);
+                    pixel[i + 3] = vshrn_n_u16(holder_vect, 8);
+                }
+                
+                //calculate the third row values
+                gray_row3 = vld3_u8(pixel + 2*arguments->sobel.cols); //get the third row
+
+                holder_vect = vmull_u8(gray_row3.val[2], r_num);
+                holder_vect = vmlal_u8(holder_vect, gray_row3.val[1], g_num);
+                holder_vect = vmlal_u8(holder_vect, gray_row3.val[0], b_num);
+                pixel[i + 6] = vshrn_n_u16(holder_vect, 8);
+
+            }
+
+            // //load the kernal elements for sobel calculations and put them in vectors
+            // //NOTE: the middle pixel (5) is not used so the index is pixel number - 2 after the fourth pixel
+            // pixels[0] = vld1_u8(gray_data);
+            // pixels[1] = vld1_u8(gray_data + 1);
+            // pixels[2] = vld1_u8(gray_data + 2);
+            // pixels[3] = vld1_u8(gray_data + arguments->gray.cols);
+            // pixels[4] = vld1_u8(gray_data + arguments->gray.cols + 2);
+            // pixels[5] = vld1_u8(gray_data + 2*arguments->gray.cols);
+            // pixels[6] = vld1_u8(gray_data + 2*arguments->gray.cols + 1);
+            // pixels[7] = vld1_u8(gray_data + 2*arguments->gray.cols + 2);
 
 
             //multiply and add correct kernal values
             /*****************gx calculations********************/
             //X: -P1 -2P4 -P7 + P3 + 2P6 + P9
             //|-(p1 + p7) + (p3 + p9) + (2P6 - 2P4)|
-            // gx_holder_vect = vabsq_s16(vaddq_s16( 
-            //                            vsubq_s16(vaddl_u8(pixels[2],pixels[7]),vaddl_u8(pixels[0],pixels[5])),//(p3 + p9) - (p1 + p7)
-            //                            vsubq_s16(vshll_n_u8(pixels[4],1),vshll_n_u8(pixels[3],1))));//(2P6 - 2P4)
+            gx_holder_vect = vabsq_s16(vaddq_s16( 
+                                       vsubq_s16(vaddl_u8(pixels[2],pixels[7]),vaddl_u8(pixels[0],pixels[5])),//(p3 + p9) - (p1 + p7)
+                                       vsubq_s16(vshll_n_u8(pixels[4],1),vshll_n_u8(pixels[3],1))));//(2P6 - 2P4)
             /***************************************************/
 
             /*****************gy calculations********************/
             //Y: P1 - P7 + 2P2 - 2P8 + P3 -P9
             //|(P1 + P3) - (P7 + P9) + (2P2 - 2P8)|
-            // gy_holder_vect = vabsq_s16(vaddq_s16(
-            //                            vsubq_s16(vaddl_u8(pixels[0],pixels[2]),vaddl_u8(pixels[5],pixels[7])), //(p1 + p3) - (p7 + p9)
-            //                            vsubq_s16(vshll_n_u8(pixels[1],1),vshll_n_u8(pixels[6],1)))); //(2p2 - 2p8)
+            gy_holder_vect = vabsq_s16(vaddq_s16(
+                                       vsubq_s16(vaddl_u8(pixels[0],pixels[2]),vaddl_u8(pixels[5],pixels[7])), //(p1 + p3) - (p7 + p9)
+                                       vsubq_s16(vshll_n_u8(pixels[1],1),vshll_n_u8(pixels[6],1)))); //(2p2 - 2p8)
             /***************************************************/
-
-            // sobel_vect = vaddq_u16(
-            //                         vabsq_s16(vaddq_s16(//Gx calculations
-            //                            vsubq_s16(vaddl_u8(pixels[2],pixels[7]),vaddl_u8(pixels[0],pixels[5])),//(p3 + p9) - (p1 + p7)
-            //                            vsubq_s16(vshll_n_u8(pixels[4],1),vshll_n_u8(pixels[3],1)))),//(2P6 - 2P4)
-            //                         vabsq_s16(vaddq_s16(//Gy calculations
-            //                            vsubq_s16(vaddl_u8(pixels[0],pixels[2]),vaddl_u8(pixels[5],pixels[7])), //(p1 + p3) - (p7 + p9)
-            //                            vsubq_s16(vshll_n_u8(pixels[1],1),vshll_n_u8(pixels[6],1)))));//(2p2 - 2p8)
             //add gx and gy
-            //sobel_vect = vaddq_u16(gx_holder_vect, gy_holder_vect);
-            //get the min between G and the 255 vector
-            // sobel_vect = vminq_u16(sobel_vect, min_comp_vect);
+            sobel_vect = vaddq_u16(gx_holder_vect, gy_holder_vect);
 
             //narrow vector to 8 bits and store the values in memory
-            //vst1_u8(sobel_data, vqmovn_u16(sobel_vect));
-
-            vst1_u8(sobel_data, vqmovn_u16(vaddq_u16(
-                                    vabsq_s16(vaddq_s16(//Gx calculations
-                                       vsubq_s16(vaddl_u8(pixels[2],pixels[7]),vaddl_u8(pixels[0],pixels[5])),//(p3 + p9) - (p1 + p7)
-                                       vsubq_s16(vshll_n_u8(pixels[4],1),vshll_n_u8(pixels[3],1)))),//(2P6 - 2P4)
-                                    vabsq_s16(vaddq_s16(//Gy calculations
-                                       vsubq_s16(vaddl_u8(pixels[0],pixels[2]),vaddl_u8(pixels[5],pixels[7])), //(p1 + p3) - (p7 + p9)
-                                       vsubq_s16(vshll_n_u8(pixels[1],1),vshll_n_u8(pixels[6],1)))))));//(2p2 - 2p8)
+            vst1_u8(sobel_data, vqmovn_u16(sobel_vect));
         }
         
         //wait for all threads to finish processing the filtered image
