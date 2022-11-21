@@ -242,7 +242,7 @@ void *thread_filter(void *args)
     uint8x8_t gray_vect;
 
     //vectors to hold kernal pixels
-    uint8x8_t pixels[8];
+    uint8x8_t pixels[9];
     //vectors for intermidiate calculations
     int16x8_t gx_holder_vect;
     int16x8_t gy_holder_vect;
@@ -271,22 +271,12 @@ void *thread_filter(void *args)
                 pixels[gray_ind] = vshrn_n_u16(holder1_vect, 8);
 
                 //calculate the second row values
-                if(gray_ind != 1) //the if statement makes it skip the middle pixel element
-                {
-                    gray_row2 = vld3_u8(pixel + arguments->sobel.cols + gray_ind); //get the second row
-                    holder2_vect = vmull_u8(gray_row2.val[2], r_num);
-                    holder2_vect = vmlal_u8(holder2_vect, gray_row2.val[1], g_num);
-                    holder2_vect = vmlal_u8(holder2_vect, gray_row2.val[0], b_num);
-                    if(gray_ind == 2)
-                    {
-                        pixels[5] = vshrn_n_u16(holder2_vect, 8);
-                    }
-                    else
-                    {
-                        pixels[4] = vshrn_n_u16(holder2_vect, 8);
-                    }
+                gray_row2 = vld3_u8(pixel + arguments->sobel.cols + gray_ind); //get the second row
+                holder2_vect = vmull_u8(gray_row2.val[2], r_num);
+                holder2_vect = vmlal_u8(holder2_vect, gray_row2.val[1], g_num);
+                holder2_vect = vmlal_u8(holder2_vect, gray_row2.val[0], b_num);
+                pixels[gray_ind + 3] = vshrn_n_u16(holder3_vect, 8);
                     
-                }
                 
                 //calculate the third row values
                 gray_row3 = vld3_u8(pixel + 2*arguments->sobel.cols + gray_ind); //get the third row
@@ -294,7 +284,7 @@ void *thread_filter(void *args)
                 holder3_vect = vmull_u8(gray_row3.val[2], r_num);
                 holder3_vect = vmlal_u8(holder3_vect, gray_row3.val[1], g_num);
                 holder3_vect = vmlal_u8(holder3_vect, gray_row3.val[0], b_num);
-                pixels[gray_ind + 5] = vshrn_n_u16(holder3_vect, 8);
+                pixels[gray_ind + 6] = vshrn_n_u16(holder3_vect, 8);
 
             }
 
@@ -315,16 +305,16 @@ void *thread_filter(void *args)
             //X: -P1 -2P4 -P7 + P3 + 2P6 + P9
             //|-(p1 + p7) + (p3 + p9) + (2P6 - 2P4)|
             gx_holder_vect = vabsq_s16(vaddq_s16( 
-                                       vsubq_s16(vaddl_u8(pixels[2],pixels[7]),vaddl_u8(pixels[0],pixels[5])),//(p3 + p9) - (p1 + p7)
-                                       vsubq_s16(vshll_n_u8(pixels[4],1),vshll_n_u8(pixels[3],1))));//(2P6 - 2P4)
+                                       vsubq_s16(vaddl_u8(pixels[2],pixels[8]),vaddl_u8(pixels[0],pixels[6])),//(p3 + p9) - (p1 + p7)
+                                       vsubq_s16(vshll_n_u8(pixels[5],1),vshll_n_u8(pixels[3],1))));//(2P6 - 2P4)
             /***************************************************/
 
             /*****************gy calculations********************/
             //Y: P1 - P7 + 2P2 - 2P8 + P3 -P9
             //|(P1 + P3) - (P7 + P9) + (2P2 - 2P8)|
             gy_holder_vect = vabsq_s16(vaddq_s16(
-                                       vsubq_s16(vaddl_u8(pixels[0],pixels[2]),vaddl_u8(pixels[5],pixels[7])), //(p1 + p3) - (p7 + p9)
-                                       vsubq_s16(vshll_n_u8(pixels[1],1),vshll_n_u8(pixels[6],1)))); //(2p2 - 2p8)
+                                       vsubq_s16(vaddl_u8(pixels[0],pixels[2]),vaddl_u8(pixels[6],pixels[8])), //(p1 + p3) - (p7 + p9)
+                                       vsubq_s16(vshll_n_u8(pixels[1],1),vshll_n_u8(pixels[7],1)))); //(2p2 - 2p8)
             /***************************************************/
             //add gx and gy
             sobel_vect = vaddq_u16(gx_holder_vect, gy_holder_vect);
