@@ -259,7 +259,7 @@ void *thread_filter(void *args)
         {
 
             //calculate the gray values needed for sobel calculations
-            for(int gray_ind = 0; gray_ind < 3; pixel += 8 * 3)
+            for(int gray_ind = 0; gray_ind < 3; gray_ind ++, pixel += 8 * 3)
             {
                 //calculate the first row values
                 gray_row1 = vld3_u8(pixel); //get the first row
