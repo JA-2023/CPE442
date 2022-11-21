@@ -260,32 +260,32 @@ void *thread_filter(void *args)
         for(int i = start_sobel; i < stop_sobel; i+=8, gray_data += 8, sobel_data += 8, pixel += 8 * 3)
         {
 
-            // //calculate the gray values needed for sobel calculations
-            // for(int gray_ind = 0; gray_ind < 3; gray_ind++)
-            // {
-            //     //calculate the first row values
-            //     gray_row1 = vld3_u8(pixel + gray_ind); //get the first row
-            //     holder_vect = vmull_u8(gray_row1.val[2], r_num);
-            //     holder_vect = vmlal_u8(holder_vect, gray_row1.val[1], g_num);
-            //     holder_vect = vmlal_u8(holder_vect, gray_row1.val[0], b_num);
-            //     pixels[gray_ind] = vshrn_n_u16(holder_vect, 8);
+            //calculate the gray values needed for sobel calculations
+            for(int gray_ind = 0; gray_ind < 3; gray_ind++)
+            {
+                //calculate the first row values
+                gray_row1 = vld3_u8(pixel + gray_ind*3); //get the first row
+                holder_vect = vmull_u8(gray_row1.val[2], r_num);
+                holder_vect = vmlal_u8(holder_vect, gray_row1.val[1], g_num);
+                holder_vect = vmlal_u8(holder_vect, gray_row1.val[0], b_num);
+                pixels[gray_ind] = vshrn_n_u16(holder_vect, 8);
 
-            //     //calculate the second row values
-            //     gray_row2 = vld3_u8(pixel + arguments->frame.cols + gray_ind); //get the second row
-            //     holder_vect = vmull_u8(gray_row2.val[2], r_num);
-            //     holder_vect = vmlal_u8(holder_vect, gray_row2.val[1], g_num);
-            //     holder_vect = vmlal_u8(holder_vect, gray_row2.val[0], b_num);
-            //     pixels[gray_ind + 3] = vshrn_n_u16(holder_vect, 8);
+                //calculate the second row values
+                gray_row2 = vld3_u8(pixel + arguments->frame.cols + gray_ind*3); //get the second row
+                holder_vect = vmull_u8(gray_row2.val[2], r_num);
+                holder_vect = vmlal_u8(holder_vect, gray_row2.val[1], g_num);
+                holder_vect = vmlal_u8(holder_vect, gray_row2.val[0], b_num);
+                pixels[gray_ind + 3] = vshrn_n_u16(holder_vect, 8);
                     
                 
-            //     //calculate the third row values
-            //     gray_row3 = vld3_u8(pixel + 2*arguments->frame.cols + gray_ind); //get the third row
-            //     holder_vect = vmull_u8(gray_row3.val[2], r_num);
-            //     holder_vect = vmlal_u8(holder_vect, gray_row3.val[1], g_num);
-            //     holder_vect = vmlal_u8(holder_vect, gray_row3.val[0], b_num);
-            //     pixels[gray_ind + 6] = vshrn_n_u16(holder_vect, 8);
+                //calculate the third row values
+                gray_row3 = vld3_u8(pixel + 2*arguments->frame.cols + gray_ind*3); //get the third row
+                holder_vect = vmull_u8(gray_row3.val[2], r_num);
+                holder_vect = vmlal_u8(holder_vect, gray_row3.val[1], g_num);
+                holder_vect = vmlal_u8(holder_vect, gray_row3.val[0], b_num);
+                pixels[gray_ind + 6] = vshrn_n_u16(holder_vect, 8);
 
-            // }
+            }
             // //load the kernal elements for sobel calculations and put them in vectors
             // //NOTE: the middle pixel (5) is not used so the index is pixel number - 2 after the fourth pixel
             // pixels[0] = vld1_u8(gray_data);
@@ -297,53 +297,6 @@ void *thread_filter(void *args)
             // pixels[6] = vld1_u8(gray_data + 2*arguments->gray.cols + 1);
             // pixels[7] = vld1_u8(gray_data + 2*arguments->gray.cols + 2);
 
-            gray_row1 = vld3_u8(pixel); //get the first row
-            holder_vect = vmull_u8(gray_row1.val[2], r_num);
-            holder_vect = vmlal_u8(holder_vect, gray_row1.val[1], g_num);
-            holder_vect = vmlal_u8(holder_vect, gray_row1.val[0], b_num);
-            pixels[0] = vshrn_n_u16(holder_vect, 8);
-            
-            gray_row1 = vld3_u8(pixel + 3); //get the first row
-            holder_vect = vmull_u8(gray_row1.val[2], r_num);
-            holder_vect = vmlal_u8(holder_vect, gray_row1.val[1], g_num);
-            holder_vect = vmlal_u8(holder_vect, gray_row1.val[0], b_num);
-            pixels[1] = vshrn_n_u16(holder_vect, 8);
-
-            gray_row1 = vld3_u8(pixel + 6); //get the first row
-            holder_vect = vmull_u8(gray_row1.val[2], r_num);
-            holder_vect = vmlal_u8(holder_vect, gray_row1.val[1], g_num);
-            holder_vect = vmlal_u8(holder_vect, gray_row1.val[0], b_num);
-            pixels[2] = vshrn_n_u16(holder_vect, 8);
-
-            gray_row1 = vld3_u8(pixel + arguments->frame.cols); //get the first row
-            holder_vect = vmull_u8(gray_row1.val[2], r_num);
-            holder_vect = vmlal_u8(holder_vect, gray_row1.val[1], g_num);
-            holder_vect = vmlal_u8(holder_vect, gray_row1.val[0], b_num);
-            pixels[3] = vshrn_n_u16(holder_vect, 8);
-
-            gray_row1 = vld3_u8(pixel + arguments->frame.cols + 6); //get the first row
-            holder_vect = vmull_u8(gray_row1.val[2], r_num);
-            holder_vect = vmlal_u8(holder_vect, gray_row1.val[1], g_num);
-            holder_vect = vmlal_u8(holder_vect, gray_row1.val[0], b_num);
-            pixels[5] = vshrn_n_u16(holder_vect, 8);
-
-            gray_row1 = vld3_u8(pixel + 2*arguments->frame.cols); //get the first row
-            holder_vect = vmull_u8(gray_row1.val[2], r_num);
-            holder_vect = vmlal_u8(holder_vect, gray_row1.val[1], g_num);
-            holder_vect = vmlal_u8(holder_vect, gray_row1.val[0], b_num);
-            pixels[6] = vshrn_n_u16(holder_vect, 8);
-
-            gray_row1 = vld3_u8(pixel + 2*arguments->frame.cols + 3); //get the first row
-            holder_vect = vmull_u8(gray_row1.val[2], r_num);
-            holder_vect = vmlal_u8(holder_vect, gray_row1.val[1], g_num);
-            holder_vect = vmlal_u8(holder_vect, gray_row1.val[0], b_num);
-            pixels[7] = vshrn_n_u16(holder_vect, 8);
-
-            gray_row1 = vld3_u8(pixel + 2*arguments->frame.cols + 6); //get the first row
-            holder_vect = vmull_u8(gray_row1.val[2], r_num);
-            holder_vect = vmlal_u8(holder_vect, gray_row1.val[1], g_num);
-            holder_vect = vmlal_u8(holder_vect, gray_row1.val[0], b_num);
-            pixels[8] = vshrn_n_u16(holder_vect, 8);
 
             //multiply and add correct kernal values
             /*****************gx calculations********************/
