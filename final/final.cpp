@@ -262,7 +262,7 @@ void *thread_filter(void *args)
             for(int gray_ind = 0; gray_ind < 3; gray_ind ++, pixel += 8 * 3)
             {
                 //calculate the first row values
-                gray_row1 = vld3_u8(pixel); //get the first row
+                gray_row1 = vld3_u8(pixel + gray_ind); //get the first row
                 holder_vect = vmull_u8(gray_row1.val[2], r_num);
                 holder_vect = vmlal_u8(holder_vect, gray_row1.val[1], g_num);
                 holder_vect = vmlal_u8(holder_vect, gray_row1.val[0], b_num);
@@ -271,7 +271,7 @@ void *thread_filter(void *args)
                 //calculate the second row values
                 if(gray_ind != 1) //the if statement makes it skip the middle pixel element
                 {
-                    gray_row2 = vld3_u8(pixel + arguments->sobel.cols); //get the second row
+                    gray_row2 = vld3_u8(pixel + arguments->sobel.cols + gray_ind); //get the second row
                     holder_vect = vmull_u8(gray_row2.val[2], r_num);
                     holder_vect = vmlal_u8(holder_vect, gray_row2.val[1], g_num);
                     holder_vect = vmlal_u8(holder_vect, gray_row2.val[0], b_num);
@@ -279,7 +279,7 @@ void *thread_filter(void *args)
                 }
                 
                 //calculate the third row values
-                gray_row3 = vld3_u8(pixel + 2*arguments->sobel.cols); //get the third row
+                gray_row3 = vld3_u8(pixel + 2*arguments->sobel.cols + gray_ind); //get the third row
 
                 holder_vect = vmull_u8(gray_row3.val[2], r_num);
                 holder_vect = vmlal_u8(holder_vect, gray_row3.val[1], g_num);
