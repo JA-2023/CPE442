@@ -266,7 +266,7 @@ void *thread_filter(void *args)
                 holder_vect = vmull_u8(gray_row1.val[2], r_num);
                 holder_vect = vmlal_u8(holder_vect, gray_row1.val[1], g_num);
                 holder_vect = vmlal_u8(holder_vect, gray_row1.val[0], b_num);
-                pixel[i] = vshrn_n_u16(holder_vect, 8);
+                pixels[i] = vshrn_n_u16(holder_vect, 8);
 
                 //calculate the second row values
                 if(i != 1) //the if statement makes it skip the middle pixel element
@@ -275,7 +275,7 @@ void *thread_filter(void *args)
                     holder_vect = vmull_u8(gray_row2.val[2], r_num);
                     holder_vect = vmlal_u8(holder_vect, gray_row2.val[1], g_num);
                     holder_vect = vmlal_u8(holder_vect, gray_row2.val[0], b_num);
-                    pixel[i + 3] = vshrn_n_u16(holder_vect, 8);
+                    pixels[i + 3] = vshrn_n_u16(holder_vect, 8);
                 }
                 
                 //calculate the third row values
@@ -284,7 +284,7 @@ void *thread_filter(void *args)
                 holder_vect = vmull_u8(gray_row3.val[2], r_num);
                 holder_vect = vmlal_u8(holder_vect, gray_row3.val[1], g_num);
                 holder_vect = vmlal_u8(holder_vect, gray_row3.val[0], b_num);
-                pixel[i + 6] = vshrn_n_u16(holder_vect, 8);
+                pixels[i + 6] = vshrn_n_u16(holder_vect, 8);
 
             }
 
