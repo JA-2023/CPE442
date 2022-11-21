@@ -239,13 +239,13 @@ void *thread_filter(void *args)
     uint8x8_t pixels[8];
     //vectors for intermidiate calculations
     //TODO: take these out
-    int16x8_t gx_holder_vect;
-    int16x8_t gy_holder_vect;
+    // int16x8_t gx_holder_vect;
+    // int16x8_t gy_holder_vect;
     //full vector truncating values to 255
     //TODO: take this out
-    uint16x8_t min_comp_vect = vdupq_n_u16(255);
+    //uint16x8_t min_comp_vect = vdupq_n_u16(255);
     //final vector to be stored for sobel
-    uint16x8_t sobel_vect;
+    //uint16x8_t sobel_vect;
 
     while(!trim_threads)
     {
@@ -295,25 +295,41 @@ void *thread_filter(void *args)
             /*****************gx calculations********************/
             //X: -P1 -2P4 -P7 + P3 + 2P6 + P9
             //|-(p1 + p7) + (p3 + p9) + (2P6 - 2P4)|
-            gx_holder_vect = vabsq_s16(vaddq_s16( 
-                                       vsubq_s16(vaddl_u8(pixels[2],pixels[7]),vaddl_u8(pixels[0],pixels[5])),//(p3 + p9) - (p1 + p7)
-                                       vsubq_s16(vshll_n_u8(pixels[4],1),vshll_n_u8(pixels[3],1))));//(2P6 - 2P4)
+            // gx_holder_vect = vabsq_s16(vaddq_s16( 
+            //                            vsubq_s16(vaddl_u8(pixels[2],pixels[7]),vaddl_u8(pixels[0],pixels[5])),//(p3 + p9) - (p1 + p7)
+            //                            vsubq_s16(vshll_n_u8(pixels[4],1),vshll_n_u8(pixels[3],1))));//(2P6 - 2P4)
             /***************************************************/
 
             /*****************gy calculations********************/
             //Y: P1 - P7 + 2P2 - 2P8 + P3 -P9
             //|(P1 + P3) - (P7 + P9) + (2P2 - 2P8)|
-            gy_holder_vect = vabsq_s16(vaddq_s16(
-                                       vsubq_s16(vaddl_u8(pixels[0],pixels[2]),vaddl_u8(pixels[5],pixels[7])), //(p1 + p3) - (p7 + p9)
-                                       vsubq_s16(vshll_n_u8(pixels[1],1),vshll_n_u8(pixels[6],1)))); //(2p2 - 2p8)
+            // gy_holder_vect = vabsq_s16(vaddq_s16(
+            //                            vsubq_s16(vaddl_u8(pixels[0],pixels[2]),vaddl_u8(pixels[5],pixels[7])), //(p1 + p3) - (p7 + p9)
+            //                            vsubq_s16(vshll_n_u8(pixels[1],1),vshll_n_u8(pixels[6],1)))); //(2p2 - 2p8)
             /***************************************************/
+
+            // sobel_vect = vaddq_u16(
+            //                         vabsq_s16(vaddq_s16(//Gx calculations
+            //                            vsubq_s16(vaddl_u8(pixels[2],pixels[7]),vaddl_u8(pixels[0],pixels[5])),//(p3 + p9) - (p1 + p7)
+            //                            vsubq_s16(vshll_n_u8(pixels[4],1),vshll_n_u8(pixels[3],1)))),//(2P6 - 2P4)
+            //                         vabsq_s16(vaddq_s16(//Gy calculations
+            //                            vsubq_s16(vaddl_u8(pixels[0],pixels[2]),vaddl_u8(pixels[5],pixels[7])), //(p1 + p3) - (p7 + p9)
+            //                            vsubq_s16(vshll_n_u8(pixels[1],1),vshll_n_u8(pixels[6],1)))));//(2p2 - 2p8)
             //add gx and gy
-            sobel_vect = vaddq_u16(gx_holder_vect, gy_holder_vect);
+            //sobel_vect = vaddq_u16(gx_holder_vect, gy_holder_vect);
             //get the min between G and the 255 vector
-            sobel_vect = vminq_u16(sobel_vect, min_comp_vect);
+            // sobel_vect = vminq_u16(sobel_vect, min_comp_vect);
 
             //narrow vector to 8 bits and store the values in memory
-            vst1_u8(sobel_data, vmovn_u16(sobel_vect));
+            //vst1_u8(sobel_data, vqmovn_u16(sobel_vect));
+
+            vst1_u8(sobel_data, vqmovn_u16(vaddq_u16(
+                                    vabsq_s16(vaddq_s16(//Gx calculations
+                                       vsubq_s16(vaddl_u8(pixels[2],pixels[7]),vaddl_u8(pixels[0],pixels[5])),//(p3 + p9) - (p1 + p7)
+                                       vsubq_s16(vshll_n_u8(pixels[4],1),vshll_n_u8(pixels[3],1)))),//(2P6 - 2P4)
+                                    vabsq_s16(vaddq_s16(//Gy calculations
+                                       vsubq_s16(vaddl_u8(pixels[0],pixels[2]),vaddl_u8(pixels[5],pixels[7])), //(p1 + p3) - (p7 + p9)
+                                       vsubq_s16(vshll_n_u8(pixels[1],1),vshll_n_u8(pixels[6],1)))))));//(2p2 - 2p8)
         }
         
         //wait for all threads to finish processing the filtered image
