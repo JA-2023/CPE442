@@ -255,7 +255,7 @@ void *thread_filter(void *args)
         pixel = arguments->frame.data + (start_gray *3); //multiply by 3 for RGB and 8 for the vectors
         gray_data = arguments->gray.data + (start_gray); 
         sobel_data = arguments->sobel.data + (start_sobel);
-
+        int gray_fix = 0;
 
         for(int i = start_sobel; i < stop_sobel; i+=8, gray_data += 8, sobel_data += 8, pixel += 8 * 3)
         {
@@ -277,7 +277,8 @@ void *thread_filter(void *args)
                     holder2_vect = vmull_u8(gray_row2.val[2], r_num);
                     holder2_vect = vmlal_u8(holder2_vect, gray_row2.val[1], g_num);
                     holder2_vect = vmlal_u8(holder2_vect, gray_row2.val[0], b_num);
-                    pixels[gray_ind + 3] = vshrn_n_u16(holder2_vect, 8);
+                    pixels[gray_ind + 3 - gray_fix] = vshrn_n_u16(holder2_vect, 8);
+                    gray_fix++;
                 }
                 
                 //calculate the third row values
@@ -286,7 +287,7 @@ void *thread_filter(void *args)
                 holder3_vect = vmull_u8(gray_row3.val[2], r_num);
                 holder3_vect = vmlal_u8(holder3_vect, gray_row3.val[1], g_num);
                 holder3_vect = vmlal_u8(holder3_vect, gray_row3.val[0], b_num);
-                pixels[gray_ind + 6] = vshrn_n_u16(holder3_vect, 8);
+                pixels[gray_ind + 5] = vshrn_n_u16(holder3_vect, 8);
 
             }
 
