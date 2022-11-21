@@ -234,7 +234,9 @@ void *thread_filter(void *args)
     uint8x8_t g_num = vdup_n_u8(150); 
 
     //variable to hold the intermidate values (16 bit values)
-    uint16x8_t holder_vect;
+    uint16x8_t holder1_vect;
+    uint16x8_t holder2_vect;
+    uint16x8_t holder3_vect;
 
     //vector to hold the result of the gray pixel calculations
     uint8x8_t gray_vect;
@@ -263,28 +265,28 @@ void *thread_filter(void *args)
             {
                 //calculate the first row values
                 gray_row1 = vld3_u8(pixel + gray_ind); //get the first row
-                holder_vect = vmull_u8(gray_row1.val[2], r_num);
-                holder_vect = vmlal_u8(holder_vect, gray_row1.val[1], g_num);
-                holder_vect = vmlal_u8(holder_vect, gray_row1.val[0], b_num);
-                pixels[gray_ind] = vshrn_n_u16(holder_vect, 8);
+                holder1_vect = vmull_u8(gray_row1.val[2], r_num);
+                holder1_vect = vmlal_u8(holder1_vect, gray_row1.val[1], g_num);
+                holder1_vect = vmlal_u8(holder1_vect, gray_row1.val[0], b_num);
+                pixels[gray_ind] = vshrn_n_u16(holder1_vect, 8);
 
                 //calculate the second row values
                 if(gray_ind != 1) //the if statement makes it skip the middle pixel element
                 {
                     gray_row2 = vld3_u8(pixel + arguments->sobel.cols + gray_ind); //get the second row
-                    holder_vect = vmull_u8(gray_row2.val[2], r_num);
-                    holder_vect = vmlal_u8(holder_vect, gray_row2.val[1], g_num);
-                    holder_vect = vmlal_u8(holder_vect, gray_row2.val[0], b_num);
-                    pixels[gray_ind + 3] = vshrn_n_u16(holder_vect, 8);
+                    holder2_vect = vmull_u8(gray_row2.val[2], r_num);
+                    holder2_vect = vmlal_u8(holder2_vect, gray_row2.val[1], g_num);
+                    holder2_vect = vmlal_u8(holder2_vect, gray_row2.val[0], b_num);
+                    pixels[gray_ind + 3] = vshrn_n_u16(holder2_vect, 8);
                 }
                 
                 //calculate the third row values
                 gray_row3 = vld3_u8(pixel + 2*arguments->sobel.cols + gray_ind); //get the third row
 
-                holder_vect = vmull_u8(gray_row3.val[2], r_num);
-                holder_vect = vmlal_u8(holder_vect, gray_row3.val[1], g_num);
-                holder_vect = vmlal_u8(holder_vect, gray_row3.val[0], b_num);
-                pixels[gray_ind + 6] = vshrn_n_u16(holder_vect, 8);
+                holder3_vect = vmull_u8(gray_row3.val[2], r_num);
+                holder3_vect = vmlal_u8(holder3_vect, gray_row3.val[1], g_num);
+                holder3_vect = vmlal_u8(holder3_vect, gray_row3.val[0], b_num);
+                pixels[gray_ind + 6] = vshrn_n_u16(holder3_vect, 8);
 
             }
 
