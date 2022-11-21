@@ -140,7 +140,7 @@ int main(int argc, char* argv[])
         gettimeofday(&stop, NULL);
         
         //get the difference between the start and stop time for single frame in seconds
-        time_avg += 1000000 * (stop.tv_usec - start.tv_usec) + (stop.tv_usec - start.tv_usec);
+        time_avg += (stop.tv_sec - start.tv_sec) + (stop.tv_sec - start.tv_sec);
         //get new frame for processing
         video >> vid_frame;
         frame_counter++;
