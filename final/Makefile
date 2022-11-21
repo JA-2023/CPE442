@@ -4,8 +4,8 @@ SRCS = final.cpp
 LDFLAGS = -g
 CFLAGS = -Werror -std=c++11 -O0 -lpthread -flax-vector-conversions
 
-lab5:
+final:
 	${CC} -o ${OUT} ${SRCS} `pkg-config --cflags --libs opencv4` ${CFLAGS}
 
 clean:
-	rm -f lab5
+	rm -f final
