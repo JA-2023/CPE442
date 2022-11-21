@@ -257,7 +257,7 @@ void *thread_filter(void *args)
         sobel_data = arguments->sobel.data + (start_sobel);
 
 
-        for(int i = start_sobel; i < stop_sobel; i+=8, gray_data += 8, sobel_data += 8, pixel += 8 * 3)
+        for(int i = start_sobel; i < stop_sobel; i+=8, sobel_data += 8, pixel += 8 * 3)
         {
 
             //calculate the gray values needed for sobel calculations
