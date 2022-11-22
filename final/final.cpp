@@ -226,7 +226,7 @@ void *thread_filter(void *args)
     uint8x8_t gray_vect;
 
     //vectors to hold kernal pixels
-    uint8x8_t p1,p2,p3,p4,p6,p7,p8,p9;
+    uint8x8_t pixels[8];
     //vectors for intermidiate calculations
     int16x8_t gx_holder_vect;
     int16x8_t gy_holder_vect;
@@ -267,15 +267,16 @@ void *thread_filter(void *args)
 
         for(int i = start_sobel; i < stop_sobel; i+=8, gray_data += 8, sobel_data += 8)
         {
-            //load the kernal elements for sobel calculations and put them in vectors
-            p1 = vld1_u8(gray_data);
-            p2 = vld1_u8(gray_data + 1);
-            p3 = vld1_u8(gray_data + 2);
-            p4 = vld1_u8(gray_data + arguments->gray.cols);
-            p6 = vld1_u8(gray_data + arguments->gray.cols + 2);
-            p7 = vld1_u8(gray_data + 2*arguments->gray.cols);
-            p8 = vld1_u8(gray_data + 2*arguments->gray.cols + 1);
-            p9 = vld1_u8(gray_data + 2*arguments->gray.cols + 2);
+            // //load the kernal elements for sobel calculations and put them in vectors
+            //NOTE: the middle pixel (5) is not used so the index is pixel number - 2 after the fourth pixel
+            pixels[0] = vld1_u8(gray_data);
+            pixels[1] = vld1_u8(gray_data + 1);
+            pixels[2] = vld1_u8(gray_data + 2);
+            pixels[3] = vld1_u8(gray_data + arguments->gray.cols);
+            pixels[4] = vld1_u8(gray_data + arguments->gray.cols + 2);
+            pixels[5] = vld1_u8(gray_data + 2*arguments->gray.cols);
+            pixels[6] = vld1_u8(gray_data + 2*arguments->gray.cols + 1);
+            pixels[7] = vld1_u8(gray_data + 2*arguments->gray.cols + 2);
 
 
             //multiply and add correct kernal values
@@ -283,16 +284,16 @@ void *thread_filter(void *args)
             //X: -P1 -2P4 -P7 + P3 + 2P6 + P9
             //|-(p1 + p7) + (p3 + p9) + (2P6 - 2P4)|
             gx_holder_vect = vabsq_s16(vaddq_s16( 
-                                       vsubq_s16(vaddl_u8(p3,p9),vaddl_u8(p1,p7)),//(p3 + p9) - (p1 + p7)
-                                       vsubq_s16(vshll_n_u8(p6,1),vshll_n_u8(p4,1))));//(2P6 - 2P4)
+                                       vsubq_s16(vaddl_u8(pixels[2],pixels[7]),vaddl_u8(pixels[0],pixels[5])),//(p3 + p9) - (p1 + p7)
+                                       vsubq_s16(vshll_n_u8(pixels[4],1),vshll_n_u8(pixels[3],1))));//(2P6 - 2P4)
             /***************************************************/
 
             /*****************gy calculations********************/
             //Y: P1 - P7 + 2P2 - 2P8 + P3 -P9
             //|(P1 + P3) - (P7 + P9) + (2P2 - 2P8)|
             gy_holder_vect = vabsq_s16(vaddq_s16(
-                                       vsubq_s16(vaddl_u8(p1,p3),vaddl_u8(p7,p9)), //(p1 + p3) - (p7 + p9)
-                                       vsubq_s16(vshll_n_u8(p2,1),vshll_n_u8(p8,1)))); //(2p2 - 2p8)
+                                       vsubq_s16(vaddl_u8(pixels[0],pixels[2]),vaddl_u8(pixels[5],pixels[7])), //(p1 + p3) - (p7 + p9)
+                                       vsubq_s16(vshll_n_u8(pixels[1],1),vshll_n_u8(pixels[6],1)))); //(2p2 - 2p8)
             /***************************************************/
             //add gx and gy
             sobel_vect = vaddq_u16(gx_holder_vect, gy_holder_vect);
