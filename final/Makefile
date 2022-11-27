@@ -8,7 +8,7 @@ final:
 	${CC} -o ${OUT} ${SRCS} `pkg-config --cflags --libs opencv4` ${CFLAGS}
 
 profiler:
-	${CC} -o ${OUT} ${SRCS} `pkg-config --cflags --libs opencv4` ${CFLAGS} -lprofiler
+	${CC} -o ${OUT} ${SRCS} `pkg-config --cflags --libs opencv4` ${CFLAGS} -lprofiler -pg
 
 clean:
 	rm -f final
