@@ -15,6 +15,7 @@
 #include <iostream>
 #include <unistd.h>
 #include <sys/time.h>
+#include <V3DLib.h>
 
 using namespace cv;
 using namespace std;
@@ -42,11 +43,21 @@ int trim_threads = 0;
 
 //function prototype
 void *thread_filter(void *args);
-
-
+void gpu_gray(Int::Ptr R, Int::Ptr B, Int::Ptr G, Int::Ptr gray);
+void gpu_sobel(Int::Ptr p1, Int::Ptr p2, Int::Ptr p3, Int::Ptr p4,
+               Int::Ptr p6, Int::Ptr p7, Int::Ptr p8, Int::Ptr p9, Int::Ptr holder, Int::Ptr sobel);
 
 int main(int argc, char* argv[])
 {
+    //set up GPU threading
+    //TODO: figure out what I need to do to init the settings?
+    //construct the computation kernal
+    auto gray_k = compile(gpu_gray);
+    auto sobel_k = compile(gpu_sobel);
+
+    //allocate memory for the gpu calculations
+    Int::Array R(16), B(16), G(16), gray(16);
+    Int::Array p1(16), p2(16), p3(16), p4(16), p6(16), p7(16), p8(16), p9(16), holder(16), sobel(16);
     //variables for calculating the fps
     float time_avg = 0.0;
     int frame_counter = 0;
@@ -85,12 +96,21 @@ int main(int argc, char* argv[])
     gettimeofday(&start, NULL);
     frame_counter++;
 
+    //get frame/chunk size for threading
+    int frame_size = vid_frame.rows*vid_frame.cols;
+    int data_chunk = frame_size/4;
+    //pointer to pixel data of video frame
+    uchar *gpu_pixel = (uchar*) vid_frame.data + frame_size/2;
+    
+
     //make frame to hold the grayscale and filtered image
     Mat filtered_frame(vid_frame.rows,vid_frame.cols,CV_8UC1);
     Mat gray_frame(vid_frame.rows,vid_frame.cols,CV_8UC1);
 
+    uchar *gpu_gdata = (uchar*) gray_frame.data + frame_size/2;
+    uchar *gpu_sobel = (uchar*) filtered_frame.data + frame_size/2;
     //get a quarter of all of the pixels
-    int data_chunk = ((vid_frame.rows*vid_frame.cols)/4);
+    
     //initialize arguments for the threads
     argument[0] = {.start_gray = 0,
                     .stop_gray = data_chunk,
@@ -149,7 +169,58 @@ int main(int argc, char* argv[])
         if(vid_frame.empty())
             break;
         
+        //TODO: reset the pixel pointer and gray pointer
+        //calculate grayscale data using the gpu
+        for(int count = frame_size / 2; count < frame_size; count += 16, gpu_pixel += 16, gpu_gdata += 16)
+        {
+            //get new data and put it in arrays for gpu calculations
+            for(int i = 0, i < 16; i++)
+            {
+                //get red pixel
+                R[i] = (int)(gpu_pixel + i *3);
+                //get blue pixel
+                B[i] = (int)(gpu_pixel + i*3 + 1);
+                //get green pixel
+                G[i] = (int)(gpu_pixel + i*3 + 2);
+            }
+
+            gray_k.load(&G, &B, &G, &gray);
+            gpu_gdata = gray;
+        }
+
+        //TODO: reset the gray data pointer
+        //calculate sobel data using the GPU
+        for(int count = frame_size / 2; count < frame_size; count += 16, gpu_gdata += 16, gpu_sobel += 16)
+        {
+            //get new data and put it in arrays for gpu calculations
+            for(int i = 0, i < 16; i++)
+            {
+                //get p1 data
+                p1[i] = (int)(gpu_gdata + i);
+                //get p1 data
+                p2[i] = (int)(gpu_gdata + i + 1);
+                //get p1 data
+                p3[i] = (int)(gpu_gdata + i + 2);
+                //get p1 data
+                p4[i] = (int)(gpu_gdata + i + gray_frame.cols);
+                //get p1 data
+                p6[i] = (int)(gpu_gdata + i + 2 + gray_frame.cols);
+                //get p1 data
+                p7[i] = (int)(gpu_gdata + i + 2*gray_frame.cols);
+                //get p1 data
+                p8[i] = (int)(gpu_gdata + i + 2*gray_frame.cols + 1);
+                //get p1 data
+                p9[i] = (int)(gpu_gdata + i + 2*gray_frame.cols + 2);
+
+            }
+
+
+            sobel_k.load(&p1, &p2, &p3, &p4, &p6, &p7, &p8, &p9, &holder, &sobel)
+            gpu_sobel = sobel;
+        }
         
+
+        //invoke the kernal
         //resize image to fit on 1920x1080 screen
         namedWindow("vid_frame", WINDOW_NORMAL);
         resizeWindow("vid_frame", 1920, 1080);
@@ -181,6 +252,11 @@ int main(int argc, char* argv[])
     pthread_barrier_destroy(&display_barrier);
     cout << "final avg: " << frame_counter / time_avg << endl;
     return 0;
+}
+
+void gpu_gray(Int::Ptr R, Int::Ptr B, Int::Ptr G, Int::Ptr gray)
+{
+    //
 }
 
 /*-----------------------------------------------------
