@@ -242,6 +242,8 @@ void *thread_filter(void *args)
     uint8x8_t gray_vect;
 
     //vectors to hold kernal pixels
+    //TODO: have this hold the 3 rows of gray pixels
+    //uchar pixels[3][arguments->frame.cols];
     uint8x8_t pixels[9];
     //vectors for intermidiate calculations
     int16x8_t gx_holder_vect;
@@ -256,7 +258,7 @@ void *thread_filter(void *args)
         //gray_data = arguments->gray.data + (start_gray); 
         sobel_data = arguments->sobel.data + (start_sobel);
 
-
+        //TODO: have it compute 3 full rows of gray pixels and then use those and repeat
         for(int i = start_sobel; i < stop_sobel; i+=8, sobel_data += 8, pixel += 8 * 3)
         {
 
@@ -264,8 +266,8 @@ void *thread_filter(void *args)
             for(int gray_ind = 0; gray_ind < 3; gray_ind++)
             {
                 gray_row1 = vld3_u8(pixel + gray_ind*3); //get the first row
-                gray_row2 = vld3_u8(pixel + arguments->frame.cols + gray_ind*3); //get the second row
-                gray_row3 = vld3_u8(pixel + 2*arguments->frame.cols + gray_ind*3); //get the third row
+                gray_row2 = vld3_u8(pixel + arguments->frame.cols*3 + gray_ind*3); //get the second row
+                gray_row3 = vld3_u8(pixel + 2*arguments->frame.cols*3 + gray_ind*3); //get the third row
 
                 //calculate the first row values
                 holder_vect = vmull_u8(gray_row1.val[2], r_num);
