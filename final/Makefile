@@ -12,7 +12,7 @@ profiler:
 	${CC} -o ${OUT} ${SRCS} `pkg-config --cflags --libs opencv4` ${CFLAGS} -lprofiler -pg
 
 gpu:
-	${CC} -o ${OUT} ${SRCS} `pkg-config --cflags --libs opencv4` ${CGFLAGS}
+	${CC} -o ${OUT} ${SRCS} `pkg-config --cflags --libs opencv4` ${CGFLAGS} -IV3DLib
 
 clean:
 	rm -f final
