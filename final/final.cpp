@@ -281,7 +281,7 @@ void *thread_filter(void *args)
             vst1_u8(gray_data, gray_vect);
         }
 
-        for(int s_ind = start_sobel; s_ind < stop_sobel; s_ind+=8, gray_data += 8, sobel_data += 8, pixel += 8)
+        for(int s_ind = start_sobel; s_ind < stop_sobel; s_ind+=8, gray_data += 8, sobel_data += 8, pixel += 8*3)
         {
             //load the kernal elements for sobel calculations and put them in vectors
             pixels[0] = vld1_u8(gray_data - 2*gray_cols);
@@ -319,7 +319,7 @@ void *thread_filter(void *args)
             vst1_u8(sobel_data, vmovn_u16(sobel_vect));
 
             //calculate a new row of gray data
-            if(s_ind + 3*gray_cols < stop_sobel) //make sure it stops calculations at the right point
+            if(s_ind + 2*gray_cols < stop_sobel) //make sure it stops calculations at the right point
             {
                 colors = vld3_u8(pixel);
                 //multiply each vector lane by one of the constants
