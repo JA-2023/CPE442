@@ -219,6 +219,7 @@ void *thread_filter(void *args)
     uchar *sobel_data = (uchar*) arguments->sobel.data;
 
     //make variable to hold all of the RGB values from the data.
+    uint8x8x3_t colors; 
     //uint8x8x3_t colors;  
     uint8x8x3_t gray_row1;
     uint8x8x3_t gray_row2;
@@ -246,6 +247,8 @@ void *thread_filter(void *args)
     //vectors for intermidiate calculations
     int16x8_t gx_holder_vect;
     int16x8_t gy_holder_vect;
+    //full vector truncating values to 255
+    uint16x8_t min_comp_vect = vdupq_n_u16(255);
     //final vector to be stored for sobel
     uint16x8_t sobel_vect;
 
