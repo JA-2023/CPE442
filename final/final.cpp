@@ -242,60 +242,53 @@ void *thread_filter(void *args)
     uint8x8_t gray_vect;
 
     //vectors to hold kernal pixels
-    uint8x8_t pixels[9];
+    uint8x8_t pixels[8];
     //vectors for intermidiate calculations
     int16x8_t gx_holder_vect;
     int16x8_t gy_holder_vect;
     //final vector to be stored for sobel
     uint16x8_t sobel_vect;
 
+    int gray_cols = arguments->gray.cols;
+
     while(!trim_threads)
     {
         //move the pointer to the correct starting position
         pixel = arguments->frame.data + (start_gray *3); //multiply by 3 for RGB and 8 for the vectors
-        //gray_data = arguments->gray.data + (start_gray); 
+        gray_data = arguments->gray.data + (start_gray); 
         sobel_data = arguments->sobel.data + (start_sobel);
 
-
-        for(int i = start_sobel; i < stop_sobel; i+=8, sobel_data += 8, pixel += 8 * 3)
+        //calculat the first three gray rows for calculations
+        for(int i = start_gray; i < (arguments->start_gray + 3*gray_cols); i+=8, pixel += 8 * 3, gray_data += 8)
         {
+            //takes the RGB data and breaks in into 3 8x8 vectors each having one color
+            colors = vld3_u8(pixel);
+            //multiply each vector lane by one of the constants
+            //multiples the red pixels by the red number then stores them in the holder vector
+            holder_vect = vmull_u8(colors.val[2], r_num);
+            //multiplies the green pixels by the number then adds it to the values in the  holder vector
+            holder_vect = vmlal_u8(holder_vect, colors.val[1], g_num);
+            //multiples the blue pixels by the blue number then adds it to the values in the holder vector
+            holder_vect = vmlal_u8(holder_vect, colors.val[0], b_num);
 
-            //calculate the gray values needed for sobel calculations
-            for(int gray_ind = 0; gray_ind < 3; gray_ind++)
-            {
-                gray_row1 = vld3_u8(pixel + gray_ind*3); //get the first row
-                gray_row2 = vld3_u8(pixel + arguments->frame.cols + gray_ind*3); //get the second row
-                gray_row3 = vld3_u8(pixel + 2*arguments->frame.cols + gray_ind*3); //get the third row
+            //bit shift the values from the holder vector to narrow them down from 16 to 8 bits
+            gray_vect = vshrn_n_u16(holder_vect, 8);
 
-                //calculate the first row values
-                holder_vect = vmull_u8(gray_row1.val[2], r_num);
-                holder_vect = vmlal_u8(holder_vect, gray_row1.val[1], g_num);
-                holder_vect = vmlal_u8(holder_vect, gray_row1.val[0], b_num);
-                pixels[gray_ind] = vshrn_n_u16(holder_vect, 8);
+            //store the values in the gray vector in the gray picture mat
+            vst1_u8(gray_data, gray_vect);
+        }
 
-                //calculate the second row values
-                holder2_vect = vmull_u8(gray_row2.val[2], r_num);
-                holder2_vect = vmlal_u8(holder2_vect, gray_row2.val[1], g_num);
-                holder2_vect = vmlal_u8(holder2_vect, gray_row2.val[0], b_num);
-                pixels[gray_ind + 3] = vshrn_n_u16(holder2_vect, 8);
-                    
-                //calculate the third row values
-                holder3_vect = vmull_u8(gray_row3.val[2], r_num);
-                holder3_vect = vmlal_u8(holder3_vect, gray_row3.val[1], g_num);
-                holder3_vect = vmlal_u8(holder3_vect, gray_row3.val[0], b_num);
-                pixels[gray_ind + 6] = vshrn_n_u16(holder3_vect, 8);
-
-            }
-            // //load the kernal elements for sobel calculations and put them in vectors
-            // //NOTE: the middle pixel (5) is not used so the index is pixel number - 2 after the fourth pixel
-            // pixels[0] = vld1_u8(gray_data);
-            // pixels[1] = vld1_u8(gray_data + 1);
-            // pixels[2] = vld1_u8(gray_data + 2);
-            // pixels[3] = vld1_u8(gray_data + arguments->gray.cols);
-            // pixels[4] = vld1_u8(gray_data + arguments->gray.cols + 2);
-            // pixels[5] = vld1_u8(gray_data + 2*arguments->gray.cols);
-            // pixels[6] = vld1_u8(gray_data + 2*arguments->gray.cols + 1);
-            // pixels[7] = vld1_u8(gray_data + 2*arguments->gray.cols + 2);
+        for(int s_ind = start_sobel; s_ind < stop_sobel; s_ind+=8, gray_data += 8, sobel_data += 8, pixel += 8)
+        {
+            //load the kernal elements for sobel calculations and put them in vectors
+            pixels[0] = vld1_u8(gray_data - 2*gray_cols);
+            pixels[1] = vld1_u8(gray_data + 1 - 2*gray_cols);
+            pixels[2] = vld1_u8(gray_data + 2 - 2*gray_cols);
+            pixels[3] = vld1_u8(gray_data - gray_cols);
+            pixels[4] = vld1_u8(gray_data - gray_cols + 2);
+            pixels[5] = vld1_u8(gray_data);
+            pixels[6] = vld1_u8(gray_data + 1);
+            pixels[7] = vld1_u8(gray_data + 2);
 
 
             //multiply and add correct kernal values
@@ -303,24 +296,47 @@ void *thread_filter(void *args)
             //X: -P1 -2P4 -P7 + P3 + 2P6 + P9
             //|-(p1 + p7) + (p3 + p9) + (2P6 - 2P4)|
             gx_holder_vect = vabsq_s16(vaddq_s16( 
-                                       vsubq_s16(vaddl_u8(pixels[2],pixels[8]),vaddl_u8(pixels[0],pixels[6])),//(p3 + p9) - (p1 + p7)
-                                       vsubq_s16(vshll_n_u8(pixels[5],1),vshll_n_u8(pixels[3],1))));//(2P6 - 2P4)
+                                       vsubq_s16(vaddl_u8(pixels[2],pixels[7]),vaddl_u8(pixels[0],pixels[5])),//(p3 + p9) - (p1 + p7)
+                                       vsubq_s16(vshll_n_u8(pixels[4],1),vshll_n_u8(pixels[3],1))));//(2P6 - 2P4)
             /***************************************************/
 
             /*****************gy calculations********************/
             //Y: P1 - P7 + 2P2 - 2P8 + P3 -P9
             //|(P1 + P3) - (P7 + P9) + (2P2 - 2P8)|
             gy_holder_vect = vabsq_s16(vaddq_s16(
-                                       vsubq_s16(vaddl_u8(pixels[0],pixels[2]),vaddl_u8(pixels[6],pixels[8])), //(p1 + p3) - (p7 + p9)
-                                       vsubq_s16(vshll_n_u8(pixels[1],1),vshll_n_u8(pixels[7],1)))); //(2p2 - 2p8)
+                                       vsubq_s16(vaddl_u8(pixels[0],pixels[2]),vaddl_u8(pixels[5],pixels[7])), //(p1 + p3) - (p7 + p9)
+                                       vsubq_s16(vshll_n_u8(pixels[1],1),vshll_n_u8(pixels[6],1)))); //(2p2 - 2p8)
             /***************************************************/
             //add gx and gy
             sobel_vect = vaddq_u16(gx_holder_vect, gy_holder_vect);
+            //get the min between G and the 255 vector
+            sobel_vect = vminq_u16(sobel_vect, min_comp_vect);
 
             //narrow vector to 8 bits and store the values in memory
-            vst1_u8(sobel_data, vqmovn_u16(sobel_vect));
+            vst1_u8(sobel_data, vmovn_u16(sobel_vect));
+
+            //calculate a new row of gray data
+            if(s_ind + 3*gray_cols < stop_sobel) //make sure it stops calculations at the right point
+            {
+                colors = vld3_u8(pixel);
+                //multiply each vector lane by one of the constants
+                //multiples the red pixels by the red number then stores them in the holder vector
+                holder_vect = vmull_u8(colors.val[2], r_num);
+                //multiplies the green pixels by the number then adds it to the values in the  holder vector
+                holder_vect = vmlal_u8(holder_vect, colors.val[1], g_num);
+                //multiples the blue pixels by the blue number then adds it to the values in the holder vector
+                holder_vect = vmlal_u8(holder_vect, colors.val[0], b_num);
+
+                //bit shift the values from the holder vector to narrow them down from 16 to 8 bits
+                gray_vect = vshrn_n_u16(holder_vect, 8);
+
+                //store the values in the gray vector in the gray picture mat
+                vst1_u8(gray_data, gray_vect);
+            }
         }
         
+        
+
         //wait for all threads to finish processing the filtered image
         pthread_barrier_wait(&sobel_barrier);
         //wait until a new frame has been aquired
