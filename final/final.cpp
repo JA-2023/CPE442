@@ -146,13 +146,9 @@ int main(int argc, char* argv[])
         frame_counter++;
         //get the time when the frame is captured
         gettimeofday(&start, NULL);
+        
         if(vid_frame.empty())
             break;
-        
-        
-        //resize image to fit on 1920x1080 screen
-        namedWindow("vid_frame", WINDOW_NORMAL);
-        resizeWindow("vid_frame", 1920, 1080);
         
         //display the frame
         imshow("vid_frame", filtered_frame);
